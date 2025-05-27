@@ -24,14 +24,14 @@ export const getAllProducts = async (req, res) => {
   };
   const populateOptions = _expand
     ? [
-      { path: "category", select: "name deleted", match: { deleted: false } },
-      { path: "attribites", match: { deleted: false } },
-      { path: "comments", match: { deleted: false } },
-      {
-        path: "variants",
-        match: { deleted: false },
-      },
-    ]
+        { path: "category", select: "name deleted", match: { deleted: false } },
+        { path: "attribites", match: { deleted: false } },
+        { path: "comments", match: { deleted: false } },
+        {
+          path: "variants",
+          match: { deleted: false },
+        },
+      ]
     : [];
 
   const query = {};
@@ -159,10 +159,10 @@ export const getAllProductsNoLimit = async (req, res) => {
   // Chỉ thêm các trường hợp populate hợp lệ
   const populateOptions = _expand
     ? [
-      { path: "category", select: "name deleted", match: { deleted: false } },
-      { path: "comments", match: { deleted: false } },
-      { path: "variants", match: { deleted: false } },
-    ]
+        { path: "category", select: "name deleted", match: { deleted: false } },
+        { path: "comments", match: { deleted: false } },
+        { path: "variants", match: { deleted: false } },
+      ]
     : [];
 
   const query = {};
@@ -467,7 +467,6 @@ export const updateProduct = async (req, res) => {
         priceFinal = variants[i].price;
       }
 
-
       if (
         priceSaleFinal > variants[i].priceSale &&
         variants[i].priceSale != 0
@@ -668,6 +667,54 @@ export const getListRelatedProducts = async (req, res) => {
       bestFavoriteProducts,
       listRelatedProducts,
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const removeVietnameseTones = (str) => {
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D");
+};
+
+export const getSuggestedKeywords = async (req, res) => {
+  try {
+    const { keyword } = req.query;
+
+    if (!keyword || keyword.trim() === "") {
+      return res.status(400).json([]);
+    }
+
+    const keywordClean = removeVietnameseTones(keyword.toLowerCase());
+
+    const products = await Product.find({
+      name: { $regex: keyword, $options: "i" },
+    })
+      .limit(50)
+      .select("name");
+
+    const extractNgrams = (text, maxN = 3) => {
+      const words = text.toLowerCase().split(" ");
+      const ngrams = [];
+
+      for (let n = 1; n <= maxN; n++) {
+        for (let i = 0; i <= words.length - n; i++) {
+          ngrams.push(words.slice(i, i + n).join(" "));
+        }
+      }
+      return ngrams;
+    };
+
+    const allKeywords = products.flatMap((p) => extractNgrams(p.name));
+
+    const filtered = allKeywords
+      .filter((k) => removeVietnameseTones(k).includes(keywordClean))
+      .filter((value, index, self) => self.indexOf(value) === index);
+
+    return res.status(200).json(filtered.slice(0, 10));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

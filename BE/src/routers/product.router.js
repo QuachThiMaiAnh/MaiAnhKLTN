@@ -10,6 +10,7 @@ import {
   getProductByIdForEdit,
   getListRelatedProducts,
   getAllProductsNoLimit,
+  getSuggestedKeywords,
 } from "../controllers/products";
 import { checkAuthClerk } from "../middlewares/CheckAuthClerk";
 // import { checkAuth } from "../middlewares/checkAuth";
@@ -17,7 +18,10 @@ import { checkAuthClerk } from "../middlewares/CheckAuthClerk";
 const router = express.Router();
 
 router.get("/products", getAllProducts);
+
 router.get("/products/all", getAllProductsNoLimit);
+
+router.get("/products/keywords", getSuggestedKeywords);
 
 router.get("/products/:id", getProductById);
 
