@@ -4,24 +4,27 @@ import { IoBagHandleSharp, IoSearch } from "react-icons/io5";
 import { SlHeart } from "react-icons/sl";
 
 import MobileNav from "@/components/MobileNav";
-
 import { useUserContext } from "@/common/context/UserProvider";
 import useCart from "@/common/hooks/useCart";
-import { useToast } from "@/components/ui/use-toast";
-import axios from "axios";
-import io from "socket.io-client";
 
+import { useToast } from "@/components/ui/use-toast";
+
+import axios from "axios";
+import io from "socket.io-client"; // Kết nối tới server sử dụng WebSocket để nhận sự kiện thời gian thực.
 import Logo from "@/assets/SHOPING.jpg";
 
-const socket = io("http://localhost:3000");
 import { useClerk, useUser } from "@clerk/clerk-react";
+
 import {
   Link,
   useLocation,
   useNavigate,
   useSearchParams,
 } from "react-router-dom";
+
 import { useGetWishList } from "@/pages/(website)/wishlist/action/useGetWishList";
+
+const socket = io("http://localhost:3000");
 
 const menuItems = [
   { label: "Trang chủ", to: "/" },
@@ -29,17 +32,19 @@ const menuItems = [
   { label: "Sản phẩm", to: "/shopping" },
   { label: "Dịch vụ", to: "/services" },
   { label: "Tin tức", to: "/blog" },
-  // { label: "Trưng bày", to: "/" },
-  // { label: "Liên hệ", href: "#" },
 ];
 
 const Header = () => {
+  // Hook từ Clerk và Context người dùng
   const { isSignedIn, user } = useUser();
   const { _id } = useUserContext();
   const { openSignIn, openSignUp } = useClerk();
+
+  // State quản lý giao diện và hành vi
   const [isOpen, setIsOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string>("");
   const [showUserInfo, setShowUserInfo] = useState(false);
+
   //thông báo
   const [notifications, setNotifications] = useState<any[]>([]); // Danh sách thông báo
   const [unreadCount, setUnreadCount] = useState<number>(0); // Số lượng thông báo chưa đọc
