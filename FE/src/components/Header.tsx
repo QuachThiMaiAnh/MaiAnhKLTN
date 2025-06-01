@@ -1,33 +1,33 @@
-import { useEffect, useState } from "react";
-import { IoIosClose } from "react-icons/io";
-import { IoBagHandleSharp, IoSearch } from "react-icons/io5";
-import { SlHeart } from "react-icons/sl";
+import { useEffect, useState } from "react"; // Quản lý state và thực thi effect khi component render.
+import { IoIosClose } from "react-icons/io"; // Icon đóng
+import { IoBagHandleSharp, IoSearch } from "react-icons/io5"; // Icon giỏ hàng và tìm kiếm
+import { SlHeart } from "react-icons/sl"; // Icon yêu thích
 
-import MobileNav from "@/components/MobileNav";
-import { useUserContext } from "@/common/context/UserProvider";
-import useCart from "@/common/hooks/useCart";
+import MobileNav from "@/components/MobileNav"; // Thanh điều hướng di động
+import { useUserContext } from "@/common/context/UserProvider"; // Context người dùng để lấy thông tin người dùng hiện tại (_id, v.v.)
+import useCart from "@/common/hooks/useCart"; // Hook để lấy giỏ hàng của người dùng
+import { useToast } from "@/components/ui/use-toast"; // Hook để hiển thị thông báo (toast)
 
-import { useToast } from "@/components/ui/use-toast";
-
-import axios from "axios";
+import axios from "axios"; // Thư viện Axios để thực hiện các yêu cầu HTTP
 import io from "socket.io-client"; // Kết nối tới server sử dụng WebSocket để nhận sự kiện thời gian thực.
-import Logo from "@/assets/SHOPING.jpg";
+import Logo from "@/assets/SHOPING.jpg"; // Logo mặc định của trang web
 
-import { useClerk, useUser } from "@clerk/clerk-react";
+import { useClerk, useUser } from "@clerk/clerk-react"; // Hook từ Clerk để quản lý xác thực người dùng
 
 import {
   Link,
   useLocation,
   useNavigate,
   useSearchParams,
-} from "react-router-dom";
+} from "react-router-dom"; // Hook từ React Router để điều hướng và lấy thông tin URL
 
-import { useGetWishList } from "@/pages/(website)/wishlist/action/useGetWishList";
+import { useGetWishList } from "@/pages/(website)/wishlist/action/useGetWishList"; // Custom hook để lấy danh sách yêu thích của người dùng
 
-const socket = io("http://localhost:3000");
+const socket = io(import.meta.env.VITE_SOCKET_URL); // Kết nối tới server WebSocket
 
-import ThemeToggle from "./ThemeToggle";
+import ThemeToggle from "./ThemeToggle"; // Component để chuyển đổi chủ đề (sáng/tối)
 
+// Danh sách các mục menu
 const menuItems = [
   { label: "Trang chủ", to: "/" },
   { label: "Về chúng tôi", to: "/about" },
@@ -36,6 +36,7 @@ const menuItems = [
   { label: "Tin tức", to: "/blog" },
 ];
 
+//====================================================================================================================================================================================================================//
 const Header = () => {
   // Hook từ Clerk và Context người dùng
   const { isSignedIn, user } = useUser();
@@ -43,55 +44,57 @@ const Header = () => {
   const { openSignIn, openSignUp } = useClerk();
 
   // State quản lý giao diện và hành vi
-  const [isOpen, setIsOpen] = useState(false); // Trạng thái thanh tìm kiếm
-  const [logoUrl, setLogoUrl] = useState<string>("");
-  const [showUserInfo, setShowUserInfo] = useState(false);
+  const [isOpen, setIsOpen] = useState(false); // Trạng thái mở/đóng của ô tìm kiếm
+  const [logoUrl, setLogoUrl] = useState<string>(""); // URL của logo, mặc định là Logo.jpg
+  const [showUserInfo, setShowUserInfo] = useState(false); //quyết định có hiển thị tên, ảnh người dùng không (sau khi đăng nhập xong thì mới hiển thị).
 
   // State quản lý thông báo
   const [notifications, setNotifications] = useState<any[]>([]); // Danh sách thông báo hiện tại
   const [unreadCount, setUnreadCount] = useState<number>(0); //Số lượng thông báo chưa đọc
   const [isNotificationsOpen, setIsNotificationsOpen] =
-    useState<boolean>(false); // Hiển thị khung thông báo khi hover
-  const [isMarkAllDropdownOpen, setIsMarkAllDropdownOpen] = useState(false); //Hiển thị dropdown “Đánh dấu tất cả đã đọc”
+    useState<boolean>(false); // Bật/tắt khung thông báo
+  const [isMarkAllDropdownOpen, setIsMarkAllDropdownOpen] = useState(false); // Kiểm soát menu phụ trong thông báo (nút 3 chấm)
   const [openDropdown, setOpenDropdown] = useState<string | null>(null); //Xác định thông báo nào đang mở menu ba chấm (...) để xoá
 
-  // Thông báo Toast + Search
+  // Thông báo Toast
   const { toast } = useToast();
-  const [keyProduct, setKeyProduct] = useState(""); //Chứa từ khoá người dùng nhập để tìm kiếm sản phẩm
 
   // Hook router
   const { pathname } = useLocation();
   const navigate = useNavigate();
+
+  // Tìm kiếm
   const [searchParams, setSearchParams] = useSearchParams(); // thao tác với query string trên URL
-  const [suggestedKeywords, setSuggestedKeywords] = useState<string[]>([]);
-  const [loadingSuggest, setLoadingSuggest] = useState(false);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [keyProduct, setKeyProduct] = useState(""); // Chứa từ khoá người dùng nhập để tìm kiếm sản phẩm
+  const [suggestedKeywords, setSuggestedKeywords] = useState<string[]>([]); // Danh sách từ khoá gợi ý từ API
+  const [loadingSuggest, setLoadingSuggest] = useState(false); // Trạng thái loading khi lấy gợi ý từ khoá
+  const [highlightedIndex, setHighlightedIndex] = useState(-1); // Chỉ mục của từ khoá được highlight trong danh sách gợi ý
 
   // Hook giỏ hàng và wishlist
-  const { cart, isLoading } = useCart(_id);
-  const { wishList, isError } = useGetWishList(_id);
+  const { cart, isLoading } = useCart(_id); // Lấy giỏ hàng của người dùng
+  const { wishList, isError } = useGetWishList(_id); // Lấy danh sách yêu thích của người dùng
+  //====================================================================================================================================================================================================================//
 
-  function handleSearch() {
-    if (!keyProduct) return;
+  // Hàm xử lý tìm kiếm khi người dùng nhấn Enter hoặc click vào gợi ý
+  function handleSearch(keyword?: string) {
+    const searchKey = keyword ?? keyProduct;
+    if (!searchKey) return;
 
     if (pathname === "/shopping") {
-      searchParams.set("search", keyProduct);
+      searchParams.set("search", searchKey);
       setSearchParams(searchParams);
     } else {
-      navigate(`/shopping?search=${keyProduct}`);
+      navigate(`/shopping?search=${encodeURIComponent(searchKey)}`);
     }
 
-    // Đợi một chút mới reset
     setTimeout(() => {
       setKeyProduct("");
     }, 200);
+
     setIsOpen(false);
   }
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
-
+  // Mở cửa sổ đăng nhập hoặc đăng ký --> thành công sẽ chuyển hướng về /
   const opensignin = async () => {
     await openSignIn({
       redirectUrl: "/",
@@ -104,10 +107,12 @@ const Header = () => {
     });
   };
 
+  // Lấy logo từ API
   const fetchLogo = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/logo");
-      const data = await response.json();
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/logo`);
+
+      const data = await response.data; // Giả sử API trả về một mảng chứa logo
 
       if (data && data.length > 0) {
         setLogoUrl(data[0].image);
@@ -117,7 +122,7 @@ const Header = () => {
     }
   };
 
-  // Gợi ý keyword khi người dùng nhập vào ô tìm kiếm
+  // Lấy gợi ý từ khóa khi người dùng nhập vào ô tìm kiếm
   useEffect(() => {
     if (!keyProduct || keyProduct.length < 2) {
       setSuggestedKeywords([]);
@@ -128,7 +133,9 @@ const Header = () => {
       try {
         setLoadingSuggest(true);
         const res = await axios.get(
-          `http://localhost:8080/api/products/keywords?keyword=${keyProduct}`
+          `${
+            import.meta.env.VITE_API_URL
+          }/products/keywords?keyword=${keyProduct}`
         );
         setSuggestedKeywords(res.data);
       } catch (err) {
@@ -136,7 +143,7 @@ const Header = () => {
       } finally {
         setLoadingSuggest(false);
       }
-    }, 300); // Debounce 300ms
+    }, 300); // Thực hiện sau 300ms khi người dùng dừng gõ
 
     return () => clearTimeout(delayDebounce);
   }, [keyProduct]);
@@ -145,22 +152,22 @@ const Header = () => {
     fetchLogo();
   }, []);
 
+  // Mỗi khi người dùng chuyển trang (pathname thay đổi), sẽ scroll về đầu trang
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  // Sau khi người dùng đăng nhập, mới hiển thị avatar và tên
   useEffect(() => {
     if (isSignedIn) {
-      // const timer = setTimeout(() => {
-      setShowUserInfo(true); // Sau 1 giây sẽ hiển thị thông tin người dùng
-      // }, 1000);
-
-      // return () => clearTimeout(timer);
+      setShowUserInfo(true);
     }
-  }, [isSignedIn]); // Chạy lại effect khi trạng thái người dùng thay đổi
+  }, [isSignedIn]);
 
   // Tham gia phòng socket khi _id thay đổi
-
   useEffect(() => {
     if (_id) {
-      socket.emit("join_room", _id); // Tham gia phòng với userId
-      // console.log(`User với id: ${_id} đã tham gia phòng`);
+      socket.emit("join_room", _id);
     }
   }, [_id]);
 
@@ -168,12 +175,13 @@ const Header = () => {
   const fetchNotifications = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:8080/api/notifications/${_id}`
+        `${import.meta.env.VITE_API_URL}/notifications/${_id}`
       );
 
-      const { notifications: newNotifications = [] } = response.data || {};
+      const { notifications: newNotifications = [] } = response.data || {}; // Lấy thông báo từ phản hồi API
 
       if (!Array.isArray(newNotifications)) {
+        // Kiểm tra nếu notifications là một mảng
         console.error(
           "API response.notifications is not an array",
           newNotifications
@@ -186,7 +194,7 @@ const Header = () => {
         ...prevNotifications,
         ...newNotifications,
       ]);
-
+      console.log("Thông báo mới:", newNotifications);
       // Đếm thông báo chưa đọc
       const unreadCount = newNotifications.filter((n) => !n.isRead).length;
       setUnreadCount(unreadCount);
@@ -195,40 +203,56 @@ const Header = () => {
     }
   };
 
-  // Đánh dấu thông báo là đã đọc
+  // Xử lý khi người dùng click vào thông báo => đánh dấu thông báo đã đọc
   const handleNotificationClick = async (notificationId: string) => {
     try {
+      // Gửi yêu cầu PATCH đến server để đánh dấu thông báo là đã đọc
       await axios.patch(
-        `http://localhost:8080/api/notifications/mark-as-read/${notificationId}`
+        `${
+          import.meta.env.VITE_API_URL
+        }/notifications/mark-as-read/${notificationId}`
       );
+
+      // Cập nhật trạng thái isRead trong state hiện tại
       setNotifications((prevNotifications) =>
         prevNotifications.map((notif) =>
           notif._id === notificationId ? { ...notif, isRead: true } : notif
         )
       );
-      // Lấy lại số lượng thông báo chưa đọc từ server sau khi thay đổi
+
+      // Gửi yêu cầu GET để lấy lại số lượng thông báo chưa đọc từ backend
       const response = await axios.get(
-        `http://localhost:8080/api/notifications/unread-count/${_id}`
+        `${import.meta.env.VITE_API_URL}/notifications/unread-count/${_id}`
       );
+
+      // Cập nhật số lượng thông báo chưa đọc
       setUnreadCount(response.data.unreadCount);
     } catch (error) {
       console.error("Error marking notification as read:", error);
+      toast({
+        variant: "destructive",
+        title: "Lỗi",
+        description: "Không thể đánh dấu thông báo là đã đọc.",
+      });
     }
   };
 
+  // Đánh dấu tất cả thông báo là đã đọc
   const markAllAsRead = async () => {
     try {
+      // Gửi yêu cầu PATCH đến server để đánh dấu tất cả thông báo là đã đọc
       await axios.patch(
-        `http://localhost:8080/api/notifications/mark-as-read/all`,
+        `${import.meta.env.VITE_API_URL}/notifications/mark-as-read/all`,
         {
           userId: _id,
         }
       );
+      // Cập nhật trạng thái isRead trong state hiện tại
       setNotifications((prevNotifications) =>
         prevNotifications.map((notif) => ({ ...notif, isRead: true }))
       );
       setUnreadCount(0); // Reset số lượng chưa đọc về 0
-      setIsMarkAllDropdownOpen(false);
+      setIsMarkAllDropdownOpen(false); // Đóng menu phụ sau khi đánh dấu tất cả là đã đọc
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
       toast({
@@ -239,15 +263,29 @@ const Header = () => {
     }
   };
 
-  // Xóa thông báo
+  // Xóa một thông báo
   const handleDeleteNotification = async (notificationId: string) => {
     try {
+      // Lấy thông báo cần xoá để kiểm tra isRead
+      const deletedNotif = notifications.find((n) => n._id === notificationId);
+      const wasUnread = deletedNotif && !deletedNotif.isRead;
+
+      // Gửi yêu cầu xóa lên server
       await axios.delete(
-        `http://localhost:8080/api/notifications/${notificationId}`
+        `${import.meta.env.VITE_API_URL}/notifications/${notificationId}`
       );
+
+      // Cập nhật danh sách thông báo (xoá khỏi state)
       setNotifications((prevNotifications) =>
         prevNotifications.filter((notif) => notif._id !== notificationId)
       );
+
+      // Nếu thông báo bị xoá là chưa đọc → giảm unreadCount
+      if (wasUnread) {
+        setUnreadCount((prevCount) => Math.max(0, prevCount - 1));
+      }
+
+      // Đóng dropdown ba chấm nếu đang mở
       setOpenDropdown(null);
     } catch (error) {
       console.error("Error deleting notification:", error);
@@ -259,20 +297,18 @@ const Header = () => {
     }
   };
 
-  // Effect: Lấy thông báo lần đầu tiên
+  // Lấy thông báo lần đầu tiên
   useEffect(() => {
     if (_id) fetchNotifications();
   }, [_id]);
 
   // Lắng nghe thông báo mới từ Socket.IO
   useEffect(() => {
-    // Lắng nghe sự kiện orderNotification
+    // Thông báo đơn hàng mới hoặc có hành động liên quan.
     socket.on("orderNotification", (newNotification) => {
-      // console.log("Thông báo nhận được:", newNotification);
-
-      // Kiểm tra nếu thông báo không phải của tài khoản hiện tại
+      // Chỉ xử lý nếu thông báo là của người dùng hiện tại.
       if (newNotification.userId !== _id) {
-        return; // Nếu không phải, bỏ qua thông báo này
+        return;
       }
 
       setNotifications((prevNotifications) => {
@@ -696,6 +732,26 @@ const Header = () => {
                       }}
                       placeholder="Nhập từ khóa tìm kiếm"
                       className="flex-1 bg-background outline-none px-3 py-2 text-sm text-foreground placeholder-muted-foreground"
+                      // onKeyDown={(e) => {
+                      //   if (e.key === "ArrowDown") {
+                      //     setHighlightedIndex((prev) =>
+                      //       prev < suggestedKeywords.length - 1 ? prev + 1 : 0
+                      //     );
+                      //   } else if (e.key === "ArrowUp") {
+                      //     setHighlightedIndex((prev) =>
+                      //       prev > 0 ? prev - 1 : suggestedKeywords.length - 1
+                      //     );
+                      //   } else if (e.key === "Enter") {
+                      //     if (highlightedIndex >= 0) {
+                      //       setKeyProduct(suggestedKeywords[highlightedIndex]);
+                      //       setSuggestedKeywords([]);
+                      //       setIsOpen(false);
+                      //       handleSearch();
+                      //     } else {
+                      //       handleSearch();
+                      //     }
+                      //   }
+                      // }}
                       onKeyDown={(e) => {
                         if (e.key === "ArrowDown") {
                           setHighlightedIndex((prev) =>
@@ -707,12 +763,14 @@ const Header = () => {
                           );
                         } else if (e.key === "Enter") {
                           if (highlightedIndex >= 0) {
-                            setKeyProduct(suggestedKeywords[highlightedIndex]);
+                            const selectedKeyword =
+                              suggestedKeywords[highlightedIndex];
+                            setKeyProduct(selectedKeyword);
                             setSuggestedKeywords([]);
                             setIsOpen(false);
-                            handleSearch();
+                            handleSearch(selectedKeyword); // ✅ truyền đúng từ gợi ý
                           } else {
-                            handleSearch();
+                            handleSearch(); // dùng giá trị hiện tại trong input
                           }
                         }
                       }}
@@ -735,11 +793,17 @@ const Header = () => {
                                     : "hover:bg-muted"
                                 }`}
                                 onMouseEnter={() => setHighlightedIndex(idx)}
+                                // onClick={() => {
+                                //   setKeyProduct(keyword);
+                                //   setSuggestedKeywords([]);
+                                //   setIsOpen(false);
+                                //   handleSearch();
+                                // }}
                                 onClick={() => {
                                   setKeyProduct(keyword);
                                   setSuggestedKeywords([]);
                                   setIsOpen(false);
-                                  handleSearch();
+                                  handleSearch(keyword); // ✅ truyền trực tiếp
                                 }}
                               >
                                 {matchIndex >= 0 ? (
@@ -765,7 +829,8 @@ const Header = () => {
                       )}
                   </div>
 
-                  <button onClick={handleSearch}>
+                  {/* <button onClick={handleSearch}> */}
+                  <button onClick={() => handleSearch()}>
                     <IoSearch className="text-2xl text-foreground hover:text-primary" />
                   </button>
                 </div>
