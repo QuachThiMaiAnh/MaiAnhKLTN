@@ -171,31 +171,29 @@ const Header = () => {
     }
   }, [_id]);
 
-  // Lấy thông báo từ API
+  // Lấy thông báo từ API (không bị trùng lặp)
   const fetchNotifications = async () => {
+    if (!_id) return;
+
     try {
       const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/notifications/${_id}`
       );
 
-      const { notifications: newNotifications = [] } = response.data || {}; // Lấy thông báo từ phản hồi API
+      const { notifications: newNotifications = [] } = response.data || {};
 
       if (!Array.isArray(newNotifications)) {
-        // Kiểm tra nếu notifications là một mảng
         console.error(
-          "API response.notifications is not an array",
+          "API response.notifications is not an array:",
           newNotifications
         );
         return;
       }
 
-      // Cập nhật thông báo
-      setNotifications((prevNotifications) => [
-        ...prevNotifications,
-        ...newNotifications,
-      ]);
-      console.log("Thông báo mới:", newNotifications);
-      // Đếm thông báo chưa đọc
+      // ❗ Thay vì nối thêm vào danh sách cũ (tránh trùng), gán mới hoàn toàn
+      setNotifications(newNotifications);
+
+      // ✅ Đếm thông báo chưa đọc
       const unreadCount = newNotifications.filter((n) => !n.isRead).length;
       setUnreadCount(unreadCount);
     } catch (error) {
@@ -266,10 +264,6 @@ const Header = () => {
   // Xóa một thông báo
   const handleDeleteNotification = async (notificationId: string) => {
     try {
-      // Lấy thông báo cần xoá để kiểm tra isRead
-      const deletedNotif = notifications.find((n) => n._id === notificationId);
-      const wasUnread = deletedNotif && !deletedNotif.isRead;
-
       // Gửi yêu cầu xóa lên server
       await axios.delete(
         `${import.meta.env.VITE_API_URL}/notifications/${notificationId}`
@@ -280,13 +274,16 @@ const Header = () => {
         prevNotifications.filter((notif) => notif._id !== notificationId)
       );
 
-      // Nếu thông báo bị xoá là chưa đọc → giảm unreadCount
-      if (wasUnread) {
-        setUnreadCount((prevCount) => Math.max(0, prevCount - 1));
-      }
-
       // Đóng dropdown ba chấm nếu đang mở
       setOpenDropdown(null);
+
+      // Gửi yêu cầu GET để lấy lại số lượng thông báo chưa đọc từ backend
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/notifications/unread-count/${_id}`
+      );
+
+      // Cập nhật số lượng thông báo chưa đọc
+      setUnreadCount(response.data.unreadCount);
     } catch (error) {
       console.error("Error deleting notification:", error);
       toast({
@@ -335,8 +332,6 @@ const Header = () => {
 
     // Lắng nghe sự kiện orderStatusNotification
     socket.on("orderStatusNotification", (newNotification) => {
-      // console.log("Thông báo trạng thái nhận được:", newNotification);
-
       // Kiểm tra nếu thông báo không phải của tài khoản hiện tại
       if (newNotification.userId !== _id) {
         return; // Nếu không phải, bỏ qua thông báo này
@@ -466,6 +461,119 @@ const Header = () => {
                       {unreadCount > 0 ? unreadCount : 0}
                     </span>
                   </div>
+                  {/* Dropdown Thông báo */}
+                  {isNotificationsOpen && (
+                    <div
+                      className="absolute right-0 w-[300px] bg-card text-card-foreground shadow-2xl rounded-lg max-h-96 overflow-y-auto border border-border z-50"
+                      onMouseLeave={() => {
+                        setIsMarkAllDropdownOpen(false);
+                        setOpenDropdown(null);
+                      }}
+                    >
+                      <div className="sticky top-0 z-10 bg-card p-2 flex justify-between items-center">
+                        <h1 className="text-[13px] font-bold">
+                          Thông báo mới nhận
+                        </h1>
+                        <div className="relative">
+                          <button
+                            onClick={() =>
+                              setIsMarkAllDropdownOpen((prev) => !prev)
+                            }
+                            className="pb-3 text-[23px] transition"
+                          >
+                            ...
+                          </button>
+                          {isMarkAllDropdownOpen && (
+                            <div className="absolute right-2 mt-0 bg-card shadow-lg rounded-md z-10 border border-border">
+                              <button
+                                onClick={markAllAsRead}
+                                className="block w-[200px] py-2 text-sm rounded-md text-foreground hover:bg-muted"
+                              >
+                                Đánh dấu tất cả là đã đọc
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {notifications.length > 0 ? (
+                        <ul className="space-y-2 p-2">
+                          {notifications.map((notification) => (
+                            <li
+                              key={notification._id}
+                              className={`flex items-start gap-2 p-3 rounded-lg transition-all duration-200 cursor-pointer ${
+                                !notification.isRead
+                                  ? "bg-yellow-100 dark:bg-yellow-900/20"
+                                  : "bg-muted"
+                              } hover:bg-accent`}
+                              onClick={() =>
+                                handleNotificationClick(notification._id)
+                              }
+                            >
+                              {notification.productImage && (
+                                <img
+                                  src={notification.productImage}
+                                  alt="Product"
+                                  className="w-14 h-14 object-cover rounded-md"
+                                />
+                              )}
+
+                              <div className="flex flex-col gap-1 text-xs w-full">
+                                <Link to="/users/order-history">
+                                  <span
+                                    dangerouslySetInnerHTML={{
+                                      __html: notification.message,
+                                    }}
+                                    className="break-words line-clamp-3"
+                                  />
+                                </Link>
+                                <span className="text-muted-foreground">
+                                  {new Date(
+                                    notification.createdAt
+                                  ).toLocaleString()}
+                                </span>
+
+                                <div className="relative ml-auto">
+                                  <button
+                                    className="text-[20px] text-muted-foreground hover:text-foreground"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenDropdown((prev) =>
+                                        prev === notification._id
+                                          ? null
+                                          : notification._id
+                                      );
+                                    }}
+                                  >
+                                    ...
+                                  </button>
+                                  {openDropdown === notification._id && (
+                                    <div className="absolute right-1 top-0 bg-card shadow-lg rounded-md z-10 border border-border">
+                                      <button
+                                        className="block px-4 py-2 text-sm text-red-600 hover:bg-muted"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteNotification(
+                                            notification._id
+                                          );
+                                        }}
+                                      >
+                                        Xóa
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="p-6 text-center text-xs text-muted-foreground">
+                          Không có dữ liệu!
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Giỏ hàng */}
@@ -506,6 +614,7 @@ const Header = () => {
                 />
               </Link>
 
+              {/* MOBILE - Phiên bản phụ*/}
               <div className="w-8/12 md:w-10/12 justify-items-end px-[15px]">
                 <nav className="hidden lg:block">
                   <ul className="flex">
@@ -573,14 +682,10 @@ const Header = () => {
                       </span>
                     </div>
 
-                    {/* Dropdown Thông báo */}
+                    {/* Dropdown thông báo */}
                     {isNotificationsOpen && (
                       <div
-                        className="absolute right-0 w-[300px] bg-card text-card-foreground shadow-2xl rounded-lg max-h-96 overflow-y-auto border border-border scrollbar-hide"
-                        style={{
-                          scrollbarWidth: "none",
-                          msOverflowStyle: "none",
-                        }}
+                        className="absolute right-0 w-[300px] bg-card text-card-foreground shadow-2xl rounded-lg max-h-96 overflow-y-auto border border-border z-50"
                         onMouseLeave={() => {
                           setIsMarkAllDropdownOpen(false);
                           setOpenDropdown(null);
@@ -617,12 +722,11 @@ const Header = () => {
                             {notifications.map((notification) => (
                               <li
                                 key={notification._id}
-                                className={`flex items-center gap-2 p-3 cursor-pointer rounded-lg transition-all duration-200
-                      ${
-                        !notification.isRead
-                          ? "bg-yellow-100 dark:bg-yellow-900/20"
-                          : "bg-muted"
-                      } hover:bg-accent`}
+                                className={`flex items-start gap-2 p-3 rounded-lg transition-all duration-200 cursor-pointer ${
+                                  !notification.isRead
+                                    ? "bg-yellow-100 dark:bg-yellow-900/20"
+                                    : "bg-muted"
+                                } hover:bg-accent`}
                                 onClick={() =>
                                   handleNotificationClick(notification._id)
                                 }
@@ -635,35 +739,32 @@ const Header = () => {
                                   />
                                 )}
 
-                                <div>
-                                  <div className="flex-1 text-xs text-foreground">
-                                    <Link
-                                      to={"/users/order-history"}
-                                      className="truncate"
-                                    >
-                                      <span
-                                        dangerouslySetInnerHTML={{
-                                          __html: notification.message,
-                                        }}
-                                      />
-                                    </Link>
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
+                                <div className="flex flex-col gap-1 text-xs w-full">
+                                  <Link to="/users/order-history">
+                                    <span
+                                      dangerouslySetInnerHTML={{
+                                        __html: notification.message,
+                                      }}
+                                      className="break-words line-clamp-3"
+                                    />
+                                  </Link>
+                                  <span className="text-muted-foreground">
                                     {new Date(
                                       notification.createdAt
                                     ).toLocaleString()}
-                                  </div>
+                                  </span>
 
-                                  <div className="relative">
+                                  <div className="relative ml-auto">
                                     <button
                                       className="text-[20px] text-muted-foreground hover:text-foreground"
-                                      onClick={() =>
+                                      onClick={(e) => {
+                                        e.stopPropagation();
                                         setOpenDropdown((prev) =>
                                           prev === notification._id
                                             ? null
                                             : notification._id
-                                        )
-                                      }
+                                        );
+                                      }}
                                     >
                                       ...
                                     </button>
@@ -671,11 +772,12 @@ const Header = () => {
                                       <div className="absolute right-1 top-7 bg-card shadow-lg rounded-md z-10 border border-border">
                                         <button
                                           className="block px-4 py-2 text-sm text-red-600 hover:bg-muted"
-                                          onClick={() =>
+                                          onClick={(e) => {
+                                            e.stopPropagation();
                                             handleDeleteNotification(
                                               notification._id
-                                            )
-                                          }
+                                            );
+                                          }}
                                         >
                                           Xóa thông báo
                                         </button>
