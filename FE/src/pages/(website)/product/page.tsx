@@ -1,12 +1,16 @@
-import { Link, useParams } from "react-router-dom";
-import ProductInfo from "./_components/ProductInfo";
+import { Link, useParams } from "react-router-dom"; // 1.Điều hướng trong SPA mà không reload trang - 2. Hook dùng để lấy tham số từ URL
+
+// Import các Component con
+import ProductInfo from "./_components/ProductInfo"; // Hiển thị chi tiết sản phẩm
 import SeeMore from "./_components/SeeMore";
 import SkeletonProduct from "./_components/SkeletonProduct";
 import SliderImage from "./_components/SliderImage";
-import { useGetProductById } from "./actions/useGetProductById";
-import { useEffect, useState } from "react";
-import axios from "axios";
 import ListProductFavorite from "./_components/ListProductFavorite";
+
+// Import Custom Hook & State
+import { useGetProductById } from "./actions/useGetProductById"; // gọi API lấy thông tin sản phẩm theo id
+import { useEffect, useState } from "react"; // side-effect và local state
+import axios from "axios";
 
 type Product = {
   _id: string;
@@ -15,6 +19,7 @@ type Product = {
   priceSale: number;
   image: string;
 };
+
 interface Data {
   bestSellerProducts: Product[];
   bestFavoriteProducts: Product[];
@@ -28,7 +33,7 @@ const ProductDetail = () => {
   const [data, setData] = useState<Data>({
     bestSellerProducts: [],
     bestFavoriteProducts: [],
-    listRelatedProducts: []
+    listRelatedProducts: [],
   });
   const [isGetting, setIsGetting] = useState(false);
   const { isLoading, product, error } = useGetProductById(id!);

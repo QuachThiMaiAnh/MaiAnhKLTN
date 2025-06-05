@@ -40,7 +40,7 @@ const menuItems = [
 const Header = () => {
   // Hook từ Clerk và Context người dùng
   const { isSignedIn, user } = useUser();
-  const { _id } = useUserContext();
+  const { _id } = useUserContext(); // Lấy _id của người dùng hiện tại từ Context (UserProvider- MongoDB)
   const { openSignIn, openSignUp } = useClerk();
 
   // State quản lý giao diện và hành vi
@@ -301,7 +301,7 @@ const Header = () => {
 
   // Lắng nghe thông báo mới từ Socket.IO
   useEffect(() => {
-    // Thông báo đơn hàng mới hoặc có hành động liên quan.
+    // Lắng nghe sự kiện orderNotification
     socket.on("orderNotification", (newNotification) => {
       // Chỉ xử lý nếu thông báo là của người dùng hiện tại.
       if (newNotification.userId !== _id) {
@@ -317,10 +317,13 @@ const Header = () => {
               notif.orderId === newNotification.orderId
           )
         ) {
-          return prevNotifications; // Nếu trùng, không thêm vào nữa
+          return prevNotifications; // Nếu trùng, không thêm Tb mới vào nữa
         }
 
+        // Nếu không trùng, thêm thông báo mới vào đầu danh sách
         const updatedNotifications = [newNotification, ...prevNotifications];
+
+        // Cập nhật số lượng thông báo chưa đọc
         const unreadCount = updatedNotifications.filter(
           (n) => !n.isRead
         ).length;
@@ -338,7 +341,11 @@ const Header = () => {
       }
 
       setNotifications((prevNotifications) => {
+        // Cập nhật danh sách thông báo
+        // Trạng thái đơn hàng có thể cập nhiều lần nên không cần kiểm tra trùng lặp
         const updatedNotifications = [newNotification, ...prevNotifications];
+
+        // Cập nhật số lượng thông báo chưa đọc
         const unreadCount = updatedNotifications.filter(
           (n) => !n.isRead
         ).length;
@@ -363,15 +370,17 @@ const Header = () => {
         <div className="bg-background h-[40px] md:h-[60px] border-b border-border">
           <div className="border-x-0 lg:border-x-[50px] border-transparent relative">
             <div className="flex">
+              {/* Đây là khối trái - trên */}
+              {/* ❗ Chỉ hiện ở desktop (ẩn ở mobile) */}
               {/* Contact INFO */}
               <div className="lg:w-5/12 hidden lg:inline px-[15px]">
                 <div className="border-l border-border py-[10px] lg:px-[10px] lg:py-[20px] xl:px-[25px] xl:py-5 text-[10px] leading-5 text-muted-foreground uppercase inline-block">
                   <b className="text-foreground font-bold">liên hệ: </b>
                   <a
                     className="cursor-pointer hover:text-primary"
-                    href="tel:+3 (523) 555 123 8745"
+                    href="tel:(+84) 1900 636 789"
                   >
-                    +3 (523) 555 123 8745
+                    (+84) 1900 636 789
                   </a>
                 </div>
 
@@ -379,26 +388,29 @@ const Header = () => {
                   <b className="text-foreground font-bold">email: </b>
                   <a
                     className="cursor-pointer hover:text-primary"
-                    href="mailto:office@exzo.com"
+                    href="mailto:maianh@gmail.com"
                   >
-                    office@exzo.com
+                    maianh@gmail.com
                   </a>
                 </div>
               </div>
 
-              {/* NAVIGATION */}
+              {/* Đây là khối phải - trên */}
               <div className="w-full lg:w-7/12 text-right flex justify-between lg:justify-end items-center px-[15px]">
                 <div className="border-l border-r lg:border-r-0 border-border px-[15px] py-[10px] md:p-5 lg:px-[10px] lg:py-[20px] xl:px-[25px] xl:py-5 text-[10px] leading-5 text-muted-foreground uppercase">
+                  {/* Hiển thị thông tin người dùng nếu đã đăng nhập, nếu không thì hiển thị nút đăng nhập/đăng ký */}
                   {isSignedIn && showUserInfo ? (
                     <Link className="flex gap-2" to="/users">
+                      {/* Hiển thị ảnh đại diện người dùng */}
                       <img
                         className="rounded-full w-[20px] h-[20px] object-cover"
                         src={user?.imageUrl}
                         alt=""
                       />
+                      {/* Hiển thị tên người dùng */}
                       <span className="text-foreground">
-                        <span>{user?.firstName}</span>
-                        <span className="ml-0.5">{user?.lastName}</span>
+                        <span className="ml-0.5">{user?.firstName}</span>
+                        <span className="ml-0.5 ">{user?.lastName}</span>
                       </span>
                     </Link>
                   ) : (
@@ -422,6 +434,7 @@ const Header = () => {
                   )}
                 </div>
 
+                {/* ❗ Chỉ hiện ở desktop (ẩn ở mobile) */}
                 {/* Yêu thích */}
                 <div className="border-l border-border py-[10px] lg:px-[10px] lg:py-[20px] xl:px-[25px] xl:py-5 text-[10px] leading-5 text-muted-foreground uppercase hidden lg:inline relative">
                   <Link
@@ -429,20 +442,22 @@ const Header = () => {
                     className="cursor-pointer hover:text-primary transition-all"
                   >
                     <SlHeart className="text-xl" />
+                    {/* Số lượng sản phẩm đã yêu thích */}
                     <span className="absolute top-3 right-4 flex items-center justify-center w-[19px] h-[19px] rounded-full text-[11px] text-white bg-destructive">
                       {wishList?.products?.length || 0}
                     </span>
                   </Link>
                 </div>
 
+                {/* ❗ Chỉ hiện ở desktop (ẩn ở mobile) */}
                 {/* Thông báo */}
                 <div
                   className="relative border-l border-border py-[10px] lg:px-[10px] lg:py-[16px] xl:px-[25px] text-[10px] leading-5 text-muted-foreground uppercase hidden lg:inline"
-                  onMouseEnter={() => setIsNotificationsOpen(true)}
-                  onMouseLeave={() => setIsNotificationsOpen(false)}
+                  onMouseEnter={() => setIsNotificationsOpen(true)} //Di chuột vào chuông sẽ mở thông báo
+                  onMouseLeave={() => setIsNotificationsOpen(false)} // Di chuột ra khỏi chuông sẽ đóng thông báo
                 >
                   <div className="hover:text-primary cursor-pointer">
-                    {/* Icon Bell */}
+                    {/* Chuông*/}
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
@@ -457,10 +472,12 @@ const Header = () => {
                         d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5"
                       />
                     </svg>
+                    {/* Số lượng thông báo chưa đọc */}
                     <span className="absolute top-2 right-4 flex items-center justify-center w-[19px] h-[19px] rounded-full text-[11px] text-white bg-destructive">
                       {unreadCount > 0 ? unreadCount : 0}
                     </span>
                   </div>
+
                   {/* Dropdown Thông báo */}
                   {isNotificationsOpen && (
                     <div
@@ -489,19 +506,20 @@ const Header = () => {
                                 onClick={markAllAsRead}
                                 className="block w-[200px] py-2 text-sm rounded-md text-foreground hover:bg-muted"
                               >
-                                Đánh dấu tất cả là đã đọc
+                                Đánh dấu tất cả đã đọc
                               </button>
                             </div>
                           )}
                         </div>
                       </div>
 
+                      {/* Danh sách thông báo */}
                       {notifications.length > 0 ? (
                         <ul className="space-y-2 p-2">
                           {notifications.map((notification) => (
                             <li
                               key={notification._id}
-                              className={`flex items-start gap-2 p-3 rounded-lg transition-all duration-200 cursor-pointer ${
+                              className={`flex items-start gap-2 px-3 py-5 rounded-lg transition-all duration-200 cursor-pointer ${
                                 !notification.isRead
                                   ? "bg-yellow-100 dark:bg-yellow-900/20"
                                   : "bg-muted"
@@ -524,7 +542,7 @@ const Header = () => {
                                     dangerouslySetInnerHTML={{
                                       __html: notification.message,
                                     }}
-                                    className="break-words line-clamp-3"
+                                    className="break-words line-clamp-4"
                                   />
                                 </Link>
                                 <span className="text-muted-foreground">
@@ -532,11 +550,11 @@ const Header = () => {
                                     notification.createdAt
                                   ).toLocaleString()}
                                 </span>
-
                                 <div className="relative ml-auto">
                                   <button
-                                    className="text-[20px] text-muted-foreground hover:text-foreground"
+                                    className="text-[20px] text-muted-foreground hover:text-destructive"
                                     onClick={(e) => {
+                                      // Ngăn chặn sự kiện click lan truyền để không mở thông báo
                                       e.stopPropagation();
                                       setOpenDropdown((prev) =>
                                         prev === notification._id
@@ -548,9 +566,9 @@ const Header = () => {
                                     ...
                                   </button>
                                   {openDropdown === notification._id && (
-                                    <div className="absolute right-1 top-0 bg-card shadow-lg rounded-md z-10 border border-border">
+                                    <div className="absolute right-5 top-0 bg-card shadow-lg rounded-md z-10 border border-border">
                                       <button
-                                        className="block px-4 py-2 text-sm text-red-600 hover:bg-muted"
+                                        className="block px-2 py-2 text-sm text-red-600 hover:bg-muted"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           handleDeleteNotification(
@@ -569,13 +587,14 @@ const Header = () => {
                         </ul>
                       ) : (
                         <div className="p-6 text-center text-xs text-muted-foreground">
-                          Không có dữ liệu!
+                          Không có thông báo gì á!
                         </div>
                       )}
                     </div>
                   )}
                 </div>
 
+                {/* ❗ Chỉ hiện ở desktop (ẩn ở mobile) */}
                 {/* Giỏ hàng */}
                 <div className="border-x border-border py-[10px] lg:px-[10px] lg:py-[20px] xl:px-[25px] xl:py-5 text-[10px] leading-5 text-foreground uppercase relative hidden lg:inline">
                   <Link
@@ -593,8 +612,9 @@ const Header = () => {
                 </div>
 
                 {/* MobileNav & ThemeToggle giữ nguyên */}
-                <MobileNav />
-                <div className="ml-2">
+                <div className="ml-2 flex items-center gap-4">
+                  {/* ❗ Chỉ hiện ở mobile */}
+                  <MobileNav />
                   <ThemeToggle />
                 </div>
               </div>
@@ -605,7 +625,9 @@ const Header = () => {
         {/* Header BOTTOM */}
         <div className="h-[60px] md:h-[98px] bg-background border-b border-border shadow-custom relative">
           <div className="border-x-0 lg:border-x-[50px] border-transparent h-full">
+            {/* Logo + Nav */}
             <div className="flex h-full items-center">
+              {/* Logo điều hướng đến trang chủ - trái*/}
               <Link to="/" className="w-4/12 md:w-2/12 px-[15px]">
                 <img
                   className="w-20 md:w-36"
@@ -614,41 +636,46 @@ const Header = () => {
                 />
               </Link>
 
-              {/* MOBILE - Phiên bản phụ*/}
               <div className="w-8/12 md:w-10/12 justify-items-end px-[15px]">
+                {/* ❗ Chỉ hiện ở desktop (ẩn ở mobile) */}
+                {/* Menu chính */}
                 <nav className="hidden lg:block">
-                  <ul className="flex">
+                  <ul className="flex gap-2">
                     {menuItems.map((item) => (
                       <li className="!list-none" key={item.to}>
                         <Link
                           to={item.to}
-                          className={`text-[11px] leading-4 uppercase font-bold rounded-2xl px-5 py-[9px] transition-all
-                ${
-                  pathname === item.to
-                    ? "bg-primary text-primary-foreground shadow-custom"
-                    : "text-foreground hover:bg-primary hover:text-primary-foreground hover:shadow-custom"
-                }`}
+                          className={`text-[11px] leading-4 uppercase font-bold rounded-2xl px-5 py-[9px] transition-all                       
+                          ${
+                            pathname === item.to
+                              ? "bg-primary text-primary-foreground shadow-custom" //Highlight mục đang chọn
+                              : "text-foreground hover:bg-primary hover:text-primary-foreground hover:shadow-custom"
+                          }`}
                         >
                           {item.label}
                         </Link>
                       </li>
                     ))}
-
+                    {/* Tìm kiếm */}
                     <li className="!list-none">
                       <IoSearch
                         className="text-2xl ml-2 cursor-pointer text-foreground hover:text-primary transition-all"
+                        // Bật tắt thanh tìm kiếm mở rộng
                         onClick={() => setIsOpen(!isOpen)}
                       />
                     </li>
                   </ul>
                 </nav>
 
+                {/* ❗ Chỉ hiện ở mobile */}
                 <div className="lg:hidden flex gap-3">
+                  {/* Tìm kiếm */}
                   <IoSearch
                     className="text-3xl ml-2 cursor-pointer text-foreground hover:text-primary transition-all"
                     onClick={() => setIsOpen(!isOpen)}
                   />
 
+                  {/* Yêu thích */}
                   <Link to="/wishlist" className="relative">
                     <SlHeart className="text-3xl ml-2 cursor-pointer text-foreground hover:text-primary transition-all" />
                     <span className="absolute -top-3 left-7 flex items-center justify-center w-[19px] h-[19px] rounded-full text-[11px] text-white bg-destructive">
@@ -663,6 +690,7 @@ const Header = () => {
                     onMouseLeave={() => setIsNotificationsOpen(false)}
                   >
                     <div className="cursor-pointer hover:text-primary">
+                      {/* Chuông nhé */}
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
@@ -710,7 +738,7 @@ const Header = () => {
                                   onClick={markAllAsRead}
                                   className="block w-[200px] py-2 text-sm rounded-md text-foreground hover:bg-muted"
                                 >
-                                  Đánh dấu tất cả là đã đọc
+                                  Đánh dấu tất cả đã đọc
                                 </button>
                               </div>
                             )}
@@ -718,6 +746,7 @@ const Header = () => {
                         </div>
 
                         {notifications.length > 0 ? (
+                          // Danh sách thông báo
                           <ul className="space-y-2 p-2">
                             {notifications.map((notification) => (
                               <li
@@ -769,9 +798,9 @@ const Header = () => {
                                       ...
                                     </button>
                                     {openDropdown === notification._id && (
-                                      <div className="absolute right-1 top-7 bg-card shadow-lg rounded-md z-10 border border-border">
+                                      <div className="absolute right-4 top-0 bg-card shadow-lg rounded-md z-10 border border-border">
                                         <button
-                                          className="block px-4 py-2 text-sm text-red-600 hover:bg-muted"
+                                          className="block px-2 py-1 text-sm text-red-600 hover:bg-muted"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             handleDeleteNotification(
@@ -779,7 +808,7 @@ const Header = () => {
                                             );
                                           }}
                                         >
-                                          Xóa thông báo
+                                          Xóa
                                         </button>
                                       </div>
                                     )}
@@ -790,13 +819,14 @@ const Header = () => {
                           </ul>
                         ) : (
                           <div className="p-6 text-center text-xs text-muted-foreground">
-                            Không có dữ liệu!
+                            Không có thông báo nào!
                           </div>
                         )}
                       </div>
                     )}
                   </div>
 
+                  {/* Giỏ hàng */}
                   <span className="relative mr-2">
                     <Link to="/cart">
                       <IoBagHandleSharp className="text-3xl ml-2 cursor-pointer text-foreground hover:text-primary transition-all" />
@@ -809,51 +839,33 @@ const Header = () => {
               </div>
             </div>
 
-            {/* Search Bar */}
+            {/* Search Bar - Thanh tìm kiếm mở rộng */}
             <div className="relative -z-30 ">
               <div
                 className={`py-10 pb-[15px] md:pb-10 absolute w-full top-0 left-0 shadow-custom_input transition-all duration-300 bg-background ${
                   isOpen
-                    ? "translate-y-0 opacity-100"
-                    : "-translate-y-full opacity-0"
+                    ? "translate-y-0 opacity-100" //Mở trượt xuống
+                    : "-translate-y-full opacity-0" // Ẩn trượt lên ngoài khung
                 }`}
               >
                 <div className="px-[15px] flex justify-center items-center gap-2">
+                  {/* Nút đóng khung tìm kiếm */}
                   <IoIosClose
                     className="text-3xl absolute right-0 top-0 mt-2 mr-2 cursor-pointer text-foreground hover:text-primary"
                     onClick={() => setIsOpen(!isOpen)}
                   />
 
-                  <div className="relative w-full md:w-2/4 flex items-center border-b border-border focus-within:border-primary">
+                  <div className="relative w-full md:w-3/4 flex items-center border-b border-border focus-within:border-primary">
                     <input
                       type="text"
                       value={keyProduct}
                       onChange={(e) => {
                         setKeyProduct(e.target.value);
-                        setHighlightedIndex(-1);
+                        setHighlightedIndex(-1); // Reset chỉ mục được đánh dấu khi người dùng nhập
                       }}
-                      placeholder="Nhập từ khóa tìm kiếm"
+                      placeholder="Nhập từ khóa tìm kiếm sản phẩm ở đây nhé ..."
                       className="flex-1 bg-background outline-none px-3 py-2 text-sm text-foreground placeholder-muted-foreground"
-                      // onKeyDown={(e) => {
-                      //   if (e.key === "ArrowDown") {
-                      //     setHighlightedIndex((prev) =>
-                      //       prev < suggestedKeywords.length - 1 ? prev + 1 : 0
-                      //     );
-                      //   } else if (e.key === "ArrowUp") {
-                      //     setHighlightedIndex((prev) =>
-                      //       prev > 0 ? prev - 1 : suggestedKeywords.length - 1
-                      //     );
-                      //   } else if (e.key === "Enter") {
-                      //     if (highlightedIndex >= 0) {
-                      //       setKeyProduct(suggestedKeywords[highlightedIndex]);
-                      //       setSuggestedKeywords([]);
-                      //       setIsOpen(false);
-                      //       handleSearch();
-                      //     } else {
-                      //       handleSearch();
-                      //     }
-                      //   }
-                      // }}
+                      //Xử lý bàn phím: ↑ ↓ Enter
                       onKeyDown={(e) => {
                         if (e.key === "ArrowDown") {
                           setHighlightedIndex((prev) =>
@@ -878,6 +890,7 @@ const Header = () => {
                       }}
                     />
 
+                    {/* Gợi ý từ khóa */}
                     {Array.isArray(suggestedKeywords) &&
                       suggestedKeywords.length > 0 && (
                         <ul className="absolute top-full left-0 mt-1 right-0 z-50 bg-card text-card-foreground border border-border rounded shadow text-sm max-h-48 overflow-y-auto">
@@ -891,16 +904,10 @@ const Header = () => {
                                 key={idx}
                                 className={`px-4 py-2 cursor-pointer ${
                                   highlightedIndex === idx
-                                    ? "bg-primary text-black dark:text-primary-foreground"
+                                    ? "bg-primary text-black dark:text-primary-foreground" // Highlight mục được chọn
                                     : "hover:bg-muted"
                                 }`}
                                 onMouseEnter={() => setHighlightedIndex(idx)}
-                                // onClick={() => {
-                                //   setKeyProduct(keyword);
-                                //   setSuggestedKeywords([]);
-                                //   setIsOpen(false);
-                                //   handleSearch();
-                                // }}
                                 onClick={() => {
                                   setKeyProduct(keyword);
                                   setSuggestedKeywords([]);
@@ -908,6 +915,7 @@ const Header = () => {
                                   handleSearch(keyword); // ✅ truyền trực tiếp
                                 }}
                               >
+                                {/* In đậm phần khớp với từ khóa */}
                                 {matchIndex >= 0 ? (
                                   <>
                                     {keyword.slice(0, matchIndex)}

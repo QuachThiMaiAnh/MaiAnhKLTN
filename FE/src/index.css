@@ -33,110 +33,122 @@
 
   :root {
     /* ========= NỀN & VĂN BẢN CHÍNH ========= */
-    --background: 0 0% 100%; /* Nền toàn trang */
-    --foreground: 240 5% 10%; /* Màu chữ chính (tiêu đề, nội dung chính) */
+    --background: 0 0% 100%; /* trắng */
+    --foreground: 0 0% 10%; /* đen đậm - chữ chính */
 
     /* ========= CARD / HỘP ========= */
-    --card: 0 0% 100%; /* Nền thẻ */
-    --card-foreground: 240 5% 10%; /* Chữ trong thẻ */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
 
     /* ========= POPOVER / DROPDOWN ========= */
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 5% 10%;
+    --popover: 0 0% 98%; /* hơi xám cho nổi hơn */
+    --popover-foreground: 0 0% 10%;
 
     /* ========= MÀU NHẤN / CHỦ ĐẠO ========= */
-    --primary: 75 70% 42%; /* Xanh lục tươi – dùng làm nút CTA */
-    --primary-foreground: 0 0% 100%; /* Chữ trắng trên nút */
+    --primary: 145 70% 35%; /* xanh đậm hơn để rõ ràng hơn */
+    --primary-foreground: 0 0% 100%; /* trắng */
 
     /* ========= MÀU PHỤ ========= */
-    --secondary: 240 4.8% 95.9%; /* Nền phụ */
-    --secondary-foreground: 240 5.9% 10%; /* Chữ phụ */
+    --secondary: 0 0% 95%; /* nền phụ: xám nhạt */
+    --secondary-foreground: 0 0% 20%; /* chữ phụ: xám đậm hơn */
 
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%; /* Chữ phụ nhẹ (placeholder, mô tả nhỏ) */
+    --muted: 0 0% 93%;
+    --muted-foreground: 0 0% 40%; /* đậm hơn để dễ đọc */
 
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+    --accent: 210 40% 90%;
+    --accent-foreground: 0 0% 15%;
 
-    --destructive: 0 84.2% 60.2%; /* Màu cảnh báo (xóa, lỗi) */
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 70% 50%; /* đỏ rõ ràng */
+    --destructive-foreground: 0 0% 100%;
 
     /* ========= INPUT & BORDER ========= */
-    --input: 214.3 31.8% 91.4%;
-    --border: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 63.2%;
+    --input: 0 0% 90%;
+    --border: 0 0% 85%;
+    --ring: 145 70% 35%; /* giống primary */
 
     /* ========= THÔNG TIN TRẠNG THÁI ========= */
-    --status: 50 100% 50%; /* Ví dụ trạng thái đang xử lý */
-    --status--foreground: 240 10% 10%;
+    --status: 45 100% 50%; /* vàng cảnh báo */
+    --status--foreground: 0 0% 10%;
 
     /* ========= GÓC BO ========= */
     --radius: 0.5rem;
 
     /* ========= NỀN & VIỀN PHỤ ========= */
-    --border1: 0 0% 95.7%;
+    --border1: 0 0% 85%;
     --border1--foreground: 0 0% 100%;
-    --border2: 0 0% 90%;
-    --background2: 0 0% 97%;
-    --foreground2: 222.2 84% 4.9%;
+    --border2: 0 0% 80%;
+    --background2: 0 0% 96%;
+    --foreground2: 0 0% 15%;
 
     /* ========= SIDEBAR ========= */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5% 15%;
-    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-background: 0 0% 97%;
+    --sidebar-foreground: 0 0% 15%;
+    --sidebar-primary: 0 0% 10%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 75 80% 85%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 145 80% 80%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 0 0% 85%;
+    --sidebar-ring: 145 70% 35%;
   }
 
   .dark {
-    --background: 240 10% 3.9%; /* Nền trang tối */
-    --foreground: 0 0% 98%; /* Chữ chính trắng */
+    /* ========= NỀN & VĂN BẢN CHÍNH ========= */
+    --background: 240 4% 8%; /* Tối vừa phải (gần #141414) */
+    --foreground: 0 0% 98%; /* Trắng gần tuyệt đối */
 
-    --card: 240 6% 10%; /* Nền thẻ */
-    --card-foreground: 0 0% 98%; /* Chữ trong thẻ */
+    /* ========= CARD / HỘP ========= */
+    --card: 240 4% 12%; /* Gần #1F1F1F */
+    --card-foreground: 0 0% 98%;
 
-    --popover: 240 6% 10%;
+    /* ========= POPOVER / DROPDOWN ========= */
+    --popover: 240 4% 14%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 75 70% 42%; /* Giữ nguyên màu chủ đạo */
+    /* ========= MÀU NHẤN / CHỦ ĐẠO ========= */
+    --primary: 75 70% 42%; /* Giữ nguyên xanh lục đậm */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
+    /* ========= MÀU PHỤ ========= */
+    --secondary: 240 3% 20%;
+    --secondary-foreground: 0 0% 90%;
 
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 0 0% 75%;
+    --muted: 240 3% 22%;
+    --muted-foreground: 0 0% 65%; /* Đậm hơn so với 75% để dễ đọc hơn */
 
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 240 4% 18%;
+    --accent-foreground: 0 0% 95%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 40%;
+    --destructive-foreground: 0 0% 98%;
 
-    --input: 217.2 32.6% 17.5%;
-    --border: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    /* ========= INPUT & BORDER ========= */
+    --input: 240 3% 25%;
+    --border: 240 3% 30%;
+    --ring: 75 70% 42%; /* giống màu primary */
 
-    --status: 270 50% 9%;
-    --status--foreground: 0 0% 95.7%;
+    /* ========= THÔNG TIN TRẠNG THÁI ========= */
+    --status: 50 90% 50%; /* vàng tươi nổi bật */
+    --status--foreground: 0 0% 100%;
 
-    --border1: 0 0% 100%;
-    --border1--foreground: 0 0% 95.7%;
-    --border2: 222.2 84% 4.9%;
-    --background2: 222.2 84% 4.9%;
-    --foreground2: 0 0% 95.7%;
+    /* ========= GÓC BO ========= */
+    --radius: 0.5rem;
 
-    --sidebar-background: 240 6% 6%;
+    /* ========= NỀN & VIỀN PHỤ ========= */
+    --border1: 0 0% 25%;
+    --border1--foreground: 0 0% 95%;
+    --border2: 0 0% 18%;
+    --background2: 0 0% 12%;
+    --foreground2: 0 0% 85%;
+
+    /* ========= SIDEBAR ========= */
+    --sidebar-background: 240 4% 10%;
     --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary: 145 70% 35%; /* giống màu primary nhưng dễ nhận */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 240 4% 20%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 240 4% 25%;
+    --sidebar-ring: 75 70% 42%;
   }
 }
 

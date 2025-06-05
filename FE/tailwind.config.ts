@@ -3,7 +3,7 @@ import tailwindcssAnimate from "tailwindcss-animate";
 import flowbite from "flowbite/plugin";
 
 const config: Config = {
-  darkMode: "class", // Dùng class `.dark` để chuyển theme
+  darkMode: "class",
   content: [
     "./pages/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
@@ -30,6 +30,7 @@ const config: Config = {
         raleway: ["Raleway", "sans-serif"],
       },
       colors: {
+        // Bảng màu light cố định (tuỳ chọn sử dụng)
         light: {
           50: "#f7fddf",
           100: "#ebf8b5",
@@ -43,12 +44,14 @@ const config: Config = {
           900: "#445206",
           950: "#263301",
         },
-        // ✅ Dựa trên biến CSS để hỗ trợ theme động
+
+        // Bảng màu chính theo biến HSL động
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -79,24 +82,21 @@ const config: Config = {
         },
         status: {
           DEFAULT: "hsl(var(--status))",
-          foreground: "hsl(var(--status-foreground))",
+          foreground: "hsl(var(--status--foreground))",
         },
         border1: {
           DEFAULT: "hsl(var(--border1))",
-          foreground: "hsl(var(--border1-foreground))",
+          foreground: "hsl(var(--border1--foreground))",
         },
         border2: {
           DEFAULT: "hsl(var(--border2))",
-          foreground: "hsl(var(--border2-foreground))",
-        },
-        background1: {
-          DEFAULT: "hsl(var(--foreground))",
-          foreground: "hsl(var(--background))",
+          foreground: "hsl(var(--foreground2))",
         },
         background2: {
           DEFAULT: "hsl(var(--background2))",
           foreground: "hsl(var(--foreground2))",
         },
+
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
