@@ -30,7 +30,6 @@ router.get("/products/:id/forEdit", getProductByIdForEdit);
 router.get("/products/:id/edit", getProductForEdit);
 
 router.post("/products", createProduct);
-// router.post("/products", checkAuth, addProduct);
 
 router.put("/products/:id", updateProduct);
 
@@ -38,6 +37,6 @@ router.post("/products/:id", deleteProduct);
 
 router.post("/products/:id/display", displayProduct);
 
-router.get("/listProductFavorite", getListRelatedProducts);
+router.get("/listRelatedProducts", getListRelatedProducts);
 
 export default router;

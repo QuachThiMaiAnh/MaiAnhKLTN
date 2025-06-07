@@ -4,29 +4,35 @@ interface AccountLockedNotificationProps {
   onClose: () => void;
 }
 
-const AccountLockedNotification: React.FC<AccountLockedNotificationProps> = ({ onClose }) => {
+const AccountLockedNotification: React.FC<AccountLockedNotificationProps> = ({
+  onClose, // là một hàm callback để đóng thông báo (được gọi khi người dùng click nút “×”).
+}) => {
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
-      <div className="bg-white text-gray-800 p-8 rounded-lg shadow-lg text-center relative pt-20 w-full max-w-md">
-        {/* Nút đóng "X" ở góc trên bên phải */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="relative w-full max-w-md p-8 pt-20 text-center rounded-lg shadow-lg bg-background text-foreground">
+        {/* Nút đóng "×" */}
         <button
           onClick={onClose}
-          className="absolute top-2 right-5 text-gray-600 hover:text-red-600 text-3xl font-serif focus:outline-none"
+          aria-label="Đóng thông báo"
+          className="absolute top-2 right-5 text-3xl font-serif text-muted-foreground hover:text-destructive-foreground focus:outline-none"
         >
           ×
         </button>
-        
-        {/* Biểu tượng cảnh báo */}
-        <div className="absolute -top-0 mt-2 left-1/2 transform -translate-x-1/2 text-6xl text-red-600">
+
+        {/* Icon cảnh báo */}
+        <div className="absolute -top-0 left-1/2 mt-2 transform -translate-x-1/2 text-6xl text-destructive">
           ⚠️
         </div>
 
-        {/* Nội dung thông báo */}
-        <h2 className="text-xl font-bold mb-4 text-red-600">
+        {/* Tiêu đề */}
+        <h2 className="mb-4 text-xl font-bold text-destructive">
           Tài khoản của bạn đã bị vô hiệu hóa!
         </h2>
-        <p className="mb-6">Vui lòng liên hệ hỗ trợ để biết thêm thông tin!</p>
 
+        {/* Nội dung */}
+        <p className="mb-6 text-muted-foreground">
+          Vui lòng liên hệ hỗ trợ để biết thêm thông tin chi tiết.
+        </p>
       </div>
     </div>
   );

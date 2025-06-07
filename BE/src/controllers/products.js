@@ -559,116 +559,149 @@ export const displayProduct = async (req, res) => {
   }
 };
 
+/** Lấy danh sách sản phẩm liên qua khi KH xem chi tiết SP
+1.	Trả về 3 sản phẩm bán chạy nhất (dựa trên count).
+2.	Trả về 3 sản phẩm được yêu thích nhất (dựa trên averageRating từ bình luận).
+3.	Trả về 3 sản phẩm liên quan cùng danh mục với sản phẩm hiện tại (khác productId).
+ */
 export const getListRelatedProducts = async (req, res) => {
   try {
     const { categoryId, productId } = req.query;
 
+    // Kiểm tra đầu vào bắt buộc
+    if (!categoryId || !productId) {
+      return res
+        .status(400)
+        .json({ message: "Missing categoryId or productId" });
+    }
+
+    // 1. Lấy 3 sản phẩm bán chạy nhất (trừ sản phẩm hiện tại)
     const bestSellerProducts = await Product.find({
-      deleted: false,
-      _id: { $ne: productId },
-      deleted: false, // Bỏ qua sản phẩm đã xóa
+      deleted: false, // Lọc những sản phẩm chưa bị xóa
+      _id: { $ne: productId }, // Trừ rs SP đang xem ra - không lấy
     })
-      .sort({ count: -1 })
+      .sort({ count: -1 }) //Sắp xếp theo count giảm dần → bán chạy nhất
       .limit(3)
-      .select("name price priceSale image");
+      .select("_id name price priceSale image"); //Chỉ chọn một số trường cần thiết để giảm payload.
+
+    // 2. Lấy 3 sản phẩm được đánh giá cao nhất
+    const MIN_REVIEWS = 5;
+    const GLOBAL_AVG = 4.0;
 
     const bestFavoriteProducts = await Product.aggregate([
       {
         $lookup: {
-          from: "comments", // Tên collection chứa các bình luận
-          localField: "_id", // Trường _id trong Product
-          foreignField: "productId", // Trường productId trong Comment
-          as: "productComments", // Alias của kết quả nối
+          from: "comments",
+          localField: "_id",
+          foreignField: "productId",
+          as: "comments",
         },
       },
       {
         $addFields: {
-          // Tính trung bình rating của sản phẩm, chỉ lấy những bình luận có rating và không bị xóa
-          averageRating: {
-            $cond: {
-              if: {
-                $gt: [
-                  {
-                    $size: {
-                      $filter: {
-                        input: "$productComments", // Lọc các bình luận
-                        as: "comment",
-                        cond: { $eq: ["$$comment.deleted", false] }, // Chỉ lấy bình luận không bị xóa
-                      },
-                    },
-                  },
-                  0, // Kiểm tra nếu có bình luận không bị xóa
-                ],
-              },
-              then: {
-                $avg: {
-                  $map: {
-                    input: {
-                      $filter: {
-                        input: "$productComments", // Chỉ lọc bình luận không bị xóa
-                        as: "comment",
-                        cond: { $eq: ["$$comment.deleted", false] }, // Lọc bình luận không bị xóa
-                      },
-                    },
-                    as: "filteredComment",
-                    in: "$$filteredComment.rating", // Chỉ tính rating của các bình luận hợp lệ
-                  },
-                },
-              },
-              else: null, // Nếu không có bình luận hợp lệ thì trả về null
+          validComments: {
+            $filter: {
+              input: "$comments",
+              as: "cmt",
+              cond: { $eq: ["$$cmt.deleted", false] },
             },
           },
         },
       },
       {
-        $match: {
-          _id: { $ne: productId }, // Bỏ qua sản phẩm hiện tại
-          averageRating: { $ne: null }, // Bỏ qua sản phẩm không có rating
-          deleted: false, // Bỏ qua sản phẩm đã xóa
+        $addFields: {
+          reviewCount: { $size: "$validComments" },
+          averageRating: {
+            $cond: [
+              { $gt: [{ $size: "$validComments" }, 0] },
+              { $avg: "$validComments.rating" },
+              null,
+            ],
+          },
         },
       },
       {
-        $sort: { averageRating: -1 }, // Sắp xếp giảm dần theo rating
+        $addFields: {
+          weightedRating: {
+            $cond: [
+              { $ne: ["$averageRating", null] },
+              {
+                $add: [
+                  {
+                    $multiply: [
+                      {
+                        $divide: [
+                          "$reviewCount",
+                          { $add: ["$reviewCount", MIN_REVIEWS] },
+                        ],
+                      },
+                      "$averageRating",
+                    ],
+                  },
+                  {
+                    $multiply: [
+                      {
+                        $divide: [
+                          MIN_REVIEWS,
+                          { $add: ["$reviewCount", MIN_REVIEWS] },
+                        ],
+                      },
+                      GLOBAL_AVG,
+                    ],
+                  },
+                ],
+              },
+              null,
+            ],
+          },
+        },
       },
       {
-        $limit: 3, // Lấy top 3 sản phẩm có rating cao nhất
+        $match: {
+          _id: { $ne: productId },
+          deleted: false,
+          weightedRating: { $ne: null },
+        },
       },
+      { $sort: { weightedRating: -1 } },
+      { $limit: 3 },
       {
         $project: {
+          _id: 1,
           name: 1,
-          averageRating: 1,
           price: 1,
           priceSale: 1,
           image: 1,
+          averageRating: 1,
+          reviewCount: 1,
+          weightedRating: 1,
         },
       },
     ]);
 
-    const category = await Category.findOne({ _id: categoryId }); // categoryId là tên của category bạn tìm
+    // 3. Kiểm tra danh mục và lấy sản phẩm liên quan
+    const category = await Category.findById(categoryId);
 
-    if (!category) {
-      return res.status(200).json({
-        bestSellerProducts,
-        bestFavoriteProducts,
-        listRelatedProducts: [],
-      });
+    let listRelatedProducts = [];
+    if (category) {
+      listRelatedProducts = await Product.find({
+        deleted: false, // không lấy sản phẩm đã bị xóa
+        _id: { $ne: productId }, // loại trừ chính sản phẩm hiện tại
+        category: { $in: [category._id] }, // lấy sản phẩm cùng danh mục
+      })
+        .limit(3)
+        .select("_id name price priceSale image");
     }
 
-    const listRelatedProducts = await Product.find({
-      category: { $in: [category._id] },
-      _id: { $ne: productId },
-      deleted: false, // Bỏ qua sản phẩm đã xóa
-    })
-      .select("name price priceSale image")
-      .limit(3);
-
     return res.status(200).json({
+      success: true,
       bestSellerProducts,
       bestFavoriteProducts,
       listRelatedProducts,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error in getListRelatedProducts:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
