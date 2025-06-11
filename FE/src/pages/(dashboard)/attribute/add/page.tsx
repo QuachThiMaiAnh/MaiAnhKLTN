@@ -14,30 +14,28 @@ import {
 import { Input } from "@/components/ui/input";
 import { useCreateAttribute } from "../actions/useCreateAttribute";
 
+// Định nghĩa schema validate cho form
 const formSchema = z.object({
-  name: z
-    .string()
-    .min(1, {
-      message: "Hãy viết tên thuộc tính",
-    })
-    .max(50),
+  name: z.string().min(1, { message: "Hãy viết tên thuộc tính" }).max(50),
 });
 
 const CreateAttributePage = () => {
+  // Hook mutation gọi API tạo thuộc tính
   const { createAttribute, isCreatting } = useCreateAttribute();
 
-  // 1. Define your form.
+  // Khởi tạo form với react-hook-form + zod
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
+      name: "", // tên thuộc tính ban đầu rỗng
     },
   });
 
-  // 2. Define a submit handler.
+  // Hàm submit
   function onSubmit(values: z.infer<typeof formSchema>) {
-    createAttribute(values);
+    createAttribute(values); // Gửi request tạo mới
   }
+
   return (
     <Form {...form}>
       <form
@@ -53,7 +51,6 @@ const CreateAttributePage = () => {
               <FormControl>
                 <Input placeholder="shadcn" {...field} />
               </FormControl>
-
               <FormMessage />
             </FormItem>
           )}
