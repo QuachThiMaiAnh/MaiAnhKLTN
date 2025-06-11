@@ -2,6 +2,11 @@ import { toast } from "@/components/ui/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
+const apiUrl = import.meta.env.VITE_API_URL;
+
+/**
+ * Hook cập nhật trạng thái hiển thị của giá trị thuộc tính
+ */
 export const useDisplayAttributeValue = () => {
   const queryClient = useQueryClient();
 
@@ -9,18 +14,18 @@ export const useDisplayAttributeValue = () => {
     mutationFn: async (id: string) => {
       try {
         const response = await axios.post(
-          `http://localhost:8080/api/attributevalue/${id}/display`
+          `${apiUrl}/attributevalue/${id}/display`
         );
-        return response.data; // Trả về dữ liệu phản hồi
+        return response.data;
       } catch (error) {
         console.error("Lỗi cập nhật hiển thị:", error);
-        throw error; // Ném lỗi để xử lý ở nơi khác nếu cần
+        throw error;
       }
     },
 
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["AtributesValue"],
+        queryKey: ["AttributeValue"],
       });
 
       toast({

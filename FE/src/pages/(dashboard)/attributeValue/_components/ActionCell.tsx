@@ -18,13 +18,13 @@ interface ActionCellProps {
 }
 
 const ActionCell: React.FC<ActionCellProps> = ({ row }) => {
-  const { deleteAtributesValue, isDeleting } = useDeleteAttributeValue();
+  const { deleteAttributeValue, isDeleting } = useDeleteAttributeValue();
   const { displayAttributeValue, isUpdating } = useDisplayAttributeValue();
 
   const handleDelete = async () => {
     if (confirm("Bạn có chắc muốn ẩn giá trị thuộc tính này?")) {
       try {
-        await deleteAtributesValue(row.original._id);
+        await deleteAttributeValue(row.original._id);
       } catch (error) {
         console.error("Lỗi khi ẩn giá trị thuộc tính:", error);
         // alert("Xóa thất bại, vui lòng thử lại.");

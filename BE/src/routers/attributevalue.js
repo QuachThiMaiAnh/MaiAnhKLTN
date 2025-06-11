@@ -21,7 +21,7 @@ attributeValueRouter.get(
 );
 attributeValueRouter.post("/attributevalue/:id", createAttributeValue);
 attributeValueRouter.put("/attributevalue/:id", updateAttributeValue);
-attributeValueRouter.delete("/attributevalue/:id", removeAttributeValue);
+attributeValueRouter.put("/attributevalue/:id/delete", removeAttributeValue);
 attributeValueRouter.post("/attributevalue/:id/display", displayAttributeValue);
 
 export default attributeValueRouter;

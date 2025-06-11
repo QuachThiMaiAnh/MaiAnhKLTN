@@ -1,87 +1,98 @@
 import Attribute from "../models/attribute";
 import AttributeValue from "../models/attributeValue";
 
+/**
+ * Lấy tất cả giá trị của thuộc tính (không phân biệt thuộc tính cha)
+ */
 export const getAllAttributeValue = async (req, res) => {
   try {
     const response = await AttributeValue.find();
-    if (response.length < 0) {
+
+    // Nếu không có giá trị nào
+    if (response.length <= 0) {
       return res
         .status(404)
         .json({ message: "Không tìm thấy giá trị thuộc tính" });
     }
+
     res.status(200).json(response);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+/**
+ * Lấy chi tiết giá trị thuộc tính theo ID
+ */
 export const getAttributeValueById = async (req, res) => {
   try {
     const response = await AttributeValue.findOne({ _id: req.params.id });
-    if (response.length < 0) {
+
+    if (!response) {
       return res
         .status(404)
         .json({ message: "Không tìm thấy giá trị thuộc tính" });
     }
+
     res.status(200).json(response);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+/**
+ * Lấy tất cả giá trị thuộc tính theo ID của Attribute cha
+ * Có lọc theo trạng thái ẩn/hiển
+ */
 export const getAttributeValueByAttributeId = async (req, res) => {
   const { _status = "display" } = req.query;
-
-  let flag;
-  if (_status === "hidden") {
-    flag = true;
-  } else {
-    flag = false;
-  }
+  const flag = _status === "hidden";
 
   try {
-    console.log(req.params.id);
     const data = await Attribute.find({
       _id: req.params.id,
-      // deleted: flag,
     }).populate({
       path: "values",
       model: "AttributeValue",
       match: { deleted: flag },
       select: "-__v",
     });
-    if (data.length < 0) {
+
+    if (!data || data.length === 0) {
       return res
         .status(404)
         .json({ message: "Không tìm thấy giá trị thuộc tính" });
     }
+
     res.status(200).json(data);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+/**
+ * Tạo giá trị mới cho một thuộc tính (Attribute)
+ */
 export const createAttributeValue = async (req, res) => {
   try {
-    const id = req.params.id; //id Attribute
-    console.log(req.body);
-
+    const id = req.params.id; // ID của Attribute cha
     const { name, value, type } = req.body;
 
+    // Kiểm tra tên đã tồn tại chưa
     const checkName = await checkNameExist(name, id);
-
     if (checkName) {
       return res.status(400).json({
         message: "Tên giá trị thuộc tính đã tồn tại",
       });
     }
 
+    // Tìm thuộc tính cha
     const attribute = await Attribute.findOne({ _id: id });
-
     if (!attribute) {
       return res.status(404).json({ message: "Không tìm thấy thuộc tính" });
     }
 
+    // Tạo giá trị mới
     const response = await AttributeValue.create({
       name: name.replace(/\s+/g, " ").trim(),
       slugName: name
@@ -93,10 +104,12 @@ export const createAttributeValue = async (req, res) => {
       type,
     });
 
+    // Gán giá trị mới vào thuộc tính cha
     const addValue = {
       ...attribute._doc,
       values: [...attribute.values, response._id],
     };
+
     const attributeNewValue = await Attribute.findOneAndUpdate(
       { _id: id },
       addValue,
@@ -117,6 +130,9 @@ export const createAttributeValue = async (req, res) => {
   }
 };
 
+/**
+ * Cập nhật giá trị của thuộc tính
+ */
 export const updateAttributeValue = async (req, res) => {
   try {
     const { name, type, value, _id } = req.body;
@@ -133,7 +149,6 @@ export const updateAttributeValue = async (req, res) => {
     }
 
     const checkName = await checkNameExist(name, _id);
-
     if (checkName) {
       return res.status(400).json({
         message: "Tên giá trị thuộc tính đã tồn tại",
@@ -155,7 +170,7 @@ export const updateAttributeValue = async (req, res) => {
       { new: true }
     );
 
-    if (response.length < 0) {
+    if (!response) {
       return res.status(400).json({
         message: "Không tìm thấy giá trị attribute. Cập nhật thất bại",
       });
@@ -170,6 +185,9 @@ export const updateAttributeValue = async (req, res) => {
   }
 };
 
+/**
+ * Xoá mềm (ẩn) giá trị thuộc tính
+ */
 export const removeAttributeValue = async (req, res) => {
   try {
     const response = await AttributeValue.findOneAndUpdate(
@@ -177,7 +195,8 @@ export const removeAttributeValue = async (req, res) => {
       { deleted: true },
       { new: true }
     );
-    if (response.length < 0) {
+
+    if (!response) {
       return res
         .status(404)
         .json({ message: "Không tìm thấy giá trị attribute" });
@@ -192,15 +211,18 @@ export const removeAttributeValue = async (req, res) => {
   }
 };
 
+/**
+ * Hiển thị lại giá trị thuộc tính đã xoá mềm
+ */
 export const displayAttributeValue = async (req, res) => {
   try {
     const data = await AttributeValue.findOne({ _id: req.params.id });
-    if (data.length < 0) {
+
+    if (!data) {
       return res.status(404).json({ message: "Không tìm thấy thuộc tính" });
     }
 
     data.deleted = false;
-
     await data.save();
 
     return res.json({ message: "Hiển thị thuộc tính thành công", data });
@@ -209,7 +231,9 @@ export const displayAttributeValue = async (req, res) => {
   }
 };
 
-// Utils
+/**
+ * Hàm kiểm tra tên có tồn tại không (slugName để so sánh)
+ */
 async function checkNameExist(name, id) {
   const slugCheck = name
     .replace(/\s+/g, " ")
@@ -217,12 +241,10 @@ async function checkNameExist(name, id) {
     .replace(/ /g, "-")
     .toLowerCase();
 
-  // Tìm một tài liệu phù hợp
   const exists = await AttributeValue.findOne({
     slugName: slugCheck,
-    _id: { $ne: id },
+    _id: { $ne: id }, // Loại trừ chính nó (khi update)
   });
 
-  // Trả về true nếu tài liệu tồn tại, ngược lại false
   return !!exists;
 }
