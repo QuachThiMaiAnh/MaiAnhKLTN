@@ -20,13 +20,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         if (!isSignedIn) return; // Không cần kiểm tra nếu chưa đăng nhập
 
         const token = await getToken(); // Lấy token
+        // console.log("Token:", token);
         if (!token) {
           toast({
             variant: "destructive",
             title: "Lỗi!",
             description: "Phiên làm việc không tồn tại, đăng xuất...",
           });
-          localStorage.removeItem("userRole")
+          localStorage.removeItem("userRole");
           return signOut(); // Đăng xuất nếu không có token
         }
 
@@ -39,7 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             title: "Lỗi!",
             description: "Phiên làm việc đã hết hạn, đăng xuất...",
           });
-          localStorage.removeItem("userRole")
+          localStorage.removeItem("userRole");
           return signOut(); // Đăng xuất nếu token hết hạn
         }
       } catch (error) {
@@ -49,7 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           title: "Lỗi!",
           description: "Lỗi xảy ra khi kiểm tra phiên, đăng xuất...",
         });
-        localStorage.removeItem("userRole")
+        localStorage.removeItem("userRole");
         signOut(); // Đăng xuất khi gặp lỗi
       }
     };
@@ -62,7 +63,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [isSignedIn, getToken, signOut]);
 
   return (
-    <AuthContext.Provider value={{ getToken, signOut, isSignedIn: isSignedIn ?? false }}>
+    <AuthContext.Provider
+      value={{ getToken, signOut, isSignedIn: isSignedIn ?? false }}
+    >
       {children}
     </AuthContext.Provider>
   );
