@@ -7,9 +7,10 @@ import AttributeValue from "../models/attributeValue"; // Import model giá tr�
  */
 async function checkAttributeExist(name, id) {
   const slugCheck = name
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/ /g, "-")
+    .replace(/\s+/g, " ") // Chuẩn hoá khoảng trắng (nhiều khoảng trắng thành một)
+    .replace(/[^a-zA-Z0-9\s-]/g, "") // Loại bỏ ký tự đặc biệt (chỉ giữ chữ, số, khoảng trắng và dấu gạch ngang)
+    .trim() // Loại bỏ khoảng trắng đầu cuối
+    .replace(/ /g, "-") // Thay thế khoảng trắng bằng dấu gạch ngang
     .toLowerCase();
   // Tìm một thuộc tính có slug giống, nhưng id khác (tránh trùng khi update)
   return !!(await Attribute.findOne({ slug: slugCheck, _id: { $ne: id } }));
@@ -20,7 +21,7 @@ async function checkAttributeExist(name, id) {
  */
 export const createAttribute = async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name } = req.body; // Lấy tên thuộc tính từ body request
 
     // Kiểm tra trùng tên trước khi tạo
     const existAttribute = await checkAttributeExist(name);
@@ -28,8 +29,8 @@ export const createAttribute = async (req, res) => {
       return res.status(400).json({ message: "Thuộc tính đã tồn tại" });
     }
 
-    // Chuẩn hoá tên và slug (dùng để hiển thị đẹp và URL-friendly)
-    const normalizedName = name.replace(/\s+/g, " ").trim();
+    // Chuẩn hoá tên và slug
+    const normalizedName = name.replace(/\s+/g, " ").trim(); // Chuẩn hoá khoảng trắng (nhiều khoảng trắng thành một)
     const slug = normalizedName.replace(/ /g, "-").toLowerCase();
 
     const attribute = await Attribute.create({ name: normalizedName, slug });
@@ -74,6 +75,7 @@ export const getAllAttribute = async (req, res) => {
  */
 export const getAttributeById = async (req, res) => {
   try {
+    // Tìm thuộc tính theo ID và populate các giá trị liên quan
     const attribute = await Attribute.findOne({ _id: req.params.id }).populate(
       "values"
     );

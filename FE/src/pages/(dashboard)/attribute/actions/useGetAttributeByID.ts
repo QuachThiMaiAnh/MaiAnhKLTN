@@ -6,14 +6,13 @@ import { getAttributeByID } from "./api";
  * @param id ID của thuộc tính cần lấy
  */
 export function useGetAttributeByID(id: string) {
-  console.log("useGetAttributeByID", id); // Debug log để kiểm tra ID
   const {
     isLoading: isLoadingAttribute,
     data: attribute,
     error,
   } = useQuery({
     queryKey: ["Attributes", id], // Tạo key cache riêng cho mỗi thuộc tính
-    queryFn: () => getAttributeByID(id), // Gọi API lấy dữ liệu
+    queryFn: () => getAttributeByID(id), // Gọi API lấy dữ liệu thuôc tính theo ID
     enabled: !!id, // Chỉ chạy khi id hợp lệ (tránh lỗi undefined)
   });
 

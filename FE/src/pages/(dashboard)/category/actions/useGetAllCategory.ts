@@ -3,22 +3,19 @@ import { getAllCategory } from "./api";
 import { useSearchParams } from "react-router-dom";
 
 export function useGetAllCategory() {
-  const [searchParams] = useSearchParams();
+  const [searchParams] = useSearchParams(); // Lấy search params từ URL
 
-  // Filter
-  const statusDisplay = searchParams.get("status");
-
-  const filterStatus =
-    !statusDisplay || statusDisplay === "" ? "display" : statusDisplay;
+  const status = searchParams.get("status") || "display";
+  // Note: Nếu không có query `status`, mặc định là "display"
 
   const {
     isLoading,
-    data: listCategory,
+    data: categories,
     error,
   } = useQuery({
-    queryKey: ["Categories", { status: filterStatus }],
-    queryFn: () => getAllCategory({ status: filterStatus }),
-  });
+    queryKey: ["Categories", { status }],
+    queryFn: () => getAllCategory({ status }),
+  }); // Note: Truyền status vào queryKey để tái sử dụng cache
 
-  return { isLoading, listCategory, error };
+  return { isLoading, categories, error };
 }

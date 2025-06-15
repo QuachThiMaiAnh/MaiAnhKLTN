@@ -7,7 +7,7 @@ export function useGetAttributeByIDClient(id: string) {
     data: attribute,
     error,
   } = useQuery({
-    queryKey: ["Attributes", id], // Dùng chung key với admin để tái sử dụng cache
+    queryKey: ["AttributeClient", id], // Dùng chung key với admin để tái sử dụng cache
     queryFn: () => getAttributeByIDClient(id), // Gọi API lấy thuộc tính cho client (lọc giá trị đã xoá)
   });
 

@@ -35,18 +35,22 @@ const CategoriesMenu = () => {
   const [valuePrice, setValuePrice] = useState<number[]>([0, 10000000]);
 
   const { isLoading, data } = useGetCategory();
-  const { isLoadingAtribute, atribute, error } =
+  const { isLoadingAttribute, attribute, error } =
     useGetAttributeByIDClient(idColor);
 
   // const handleToggle = (index: number) => {
   //   // Nếu index đã được chọn thì đặt thành null để bỏ chọn
   //   setActiveIndex(activeIndex === index ? null : index);
   // };
- if (error) return <div className="flex items-center justify-center p-[10rem] my-10   ">
+  if (error)
+    return (
+      <div className="flex items-center justify-center p-[10rem] my-10   ">
         <AiOutlineExclamationCircle className="text-red-500 text-xl mr-2" />
-        <span className="text-red-600 font-semibold">Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.</span>
-      </div>;
-  console.log("atribute", atribute);
+        <span className="text-red-600 font-semibold">
+          Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.
+        </span>
+      </div>
+    );
 
   return (
     <div className="lg:w-[25%] mt-[35px] mb-10 lg:mt-0 order-0 uppercase font-raleway pr-[15px]">
@@ -54,7 +58,7 @@ const CategoriesMenu = () => {
         danh mục
       </h4>
       {isLoading ||
-        (isLoadingAtribute && (
+        (isLoadingAttribute && (
           <div className="">
             {Array.from({ length: 5 }).map((_, index) => (
               <div className="mb-6" key={index}>
@@ -121,7 +125,7 @@ const CategoriesMenu = () => {
 
       <div className="h-[25px] md:h-[50px]"></div>
       <h4 className="font-black text-[#343434] text-lg leading-6 mb-[10px]">
-        {atribute?.name}
+        {attribute?.name}
       </h4>
 
       <ToggleGroup
@@ -129,13 +133,12 @@ const CategoriesMenu = () => {
         type="single"
         // disabled={deleted}
       >
-        {atribute?.values.map((item: IValues) => {
+        {attribute?.values.map((item: IValues) => {
           return (
             <ToggleGroupItem
               onClick={() => {
                 searchParams.delete("search");
                 if (searchParams.get("color") === item._id) {
-                  console.log("item");
                   searchParams.set("color", "all");
                   if (searchParams.get("page")) searchParams.set("page", "1");
                   setSearchParams(searchParams);

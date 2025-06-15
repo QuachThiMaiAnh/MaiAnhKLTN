@@ -12,31 +12,33 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useDeleteCategory } from "../actions/useDeleteCategory";
 import { useDisplayCategory } from "../actions/useDisplayCategory";
-import { useGettAllProductWithCategory } from "../actions/useGettAllProductWithCategory";
+import { useGetAllProductWithCategory } from "../actions/useGettAllProductWithCategory";
 
 interface ActionCellProps {
   row: Row<Category>;
 }
 
 const ActionCell: React.FC<ActionCellProps> = ({ row }) => {
-  const { deleteCategories, isDeleting } = useDeleteCategory(row.original._id);
+  const { deleteCategoryById, isDeleting } = useDeleteCategory(
+    row.original._id
+  );
   const { displayCategory, isUpdating } = useDisplayCategory(row.original._id);
-  const { isGetting, countProduct, errorGetting } =
-    useGettAllProductWithCategory(row.original._id);
+  const { isGetting, productCount, errorGetting } =
+    useGetAllProductWithCategory(row.original._id);
 
   // console.log("countProduct", countProduct);
 
   const handleDelete = async () => {
     if (
       confirm(
-        `Bạn có chắc ẩn danh mục này? Hiện tại có ${countProduct.count} sản phẩm đang sử dụng danh mục này.`
+        `Bạn có chắc ẩn danh mục này? Hiện tại có ${productCount.count} sản phẩm đang sử dụng danh mục này.`
       )
     ) {
       try {
-        await deleteCategories(row.original._id);
+        await deleteCategoryById(row.original._id);
       } catch (error) {
         console.error("Lỗi khi ẩn danh mục:", error);
-        alert("Ẩn thất bại, vui lòng thử lại.");
+        alert("Ẩn thất bại, vui lòng thử lại.x");
       }
     }
   };

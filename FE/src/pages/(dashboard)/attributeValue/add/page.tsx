@@ -31,12 +31,10 @@ const formSchema = z.object({
 });
 
 const CreateAttributeValuePage = () => {
-  const { id } = useParams();
-  const [typeValue, setTypeValue] = useState<string>("text");
-
-  // const { isLoadingAtribute, atribute } = useGetAttributeByID(id!);
-  const { isLoading: isLoadingAtribute, atributeValues } = useGetAtributes(id!);
-  const { createAttributeValue, isCreating } = useCreateAttributeValue(id!);
+  const { id } = useParams(); // Lấy id Thuộc tính cha từ URL
+  const [typeValue, setTypeValue] = useState<string>("text"); // Mặc định là kiểu text
+  const { isLoading: isLoadingAtribute, atributeValues } = useGetAtributes(id!); // Lấy danh sách giá trị thuộc tính theo thuộc tính cha
+  const { createAttributeValue, isCreating } = useCreateAttributeValue(id!); // Tạo giá trị thuộc tính mới
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -50,7 +48,7 @@ const CreateAttributeValuePage = () => {
   // Khi đổi typeValue hoặc thuộc tính được load, gán loại vào trường `type`
   useEffect(() => {
     if (atributeValues && atributeValues.length > 0) {
-      form.reset({ type: atributeValues[0].name });
+      form.reset({ type: atributeValues[0].name }); // Gán loại thuộc tính đầu tiên
     }
   }, [atributeValues, form]);
 

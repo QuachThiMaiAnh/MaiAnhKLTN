@@ -12,14 +12,12 @@ export const getAllCategory = async (req, res) => {
     // Nếu _status là "hidden" thì flag = true => tìm danh mục đã bị ẩn
     const isDeleted = _status === "hidden";
 
+    // Tìm tất cả danh mục theo trạng thái
     const categories = await Category.find({ deleted: isDeleted }).sort({
-      createdAt: 1,
+      createdAt: -1, // sắp xếp theo thời gian tạo mới nhất
     });
 
-    if (!categories || categories.length === 0) {
-      return res.status(404).json({ message: "Không tìm thấy danh mục nào" });
-    }
-
+    // Trả về danh sách danh mục
     return res.status(200).json(categories);
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -27,10 +25,11 @@ export const getAllCategory = async (req, res) => {
 };
 
 /**
- * Lấy danh mục theo ID, chỉ lấy nếu chưa bị ẩn
+ * Lấy  chi tiết danh mục theo ID, chỉ lấy nếu chưa bị ẩn
  */
 export const getCategoryById = async (req, res) => {
   try {
+    // Tìm danh mục theo ID và trạng thái chưa bị ẩn
     const category = await Category.findOne({
       _id: req.params.id,
       deleted: false,
@@ -167,6 +166,7 @@ export const deleteCategory = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy danh mục nào" });
     }
 
+    // Tìm tất cả sản phẩm thuộc danh mục này và chưa bị ẩn
     const products = await Product.find({
       category: req.params.id,
       deleted: false,
@@ -177,7 +177,7 @@ export const deleteCategory = async (req, res) => {
       if (
         Array.isArray(product.category) &&
         product.category.length <= 1 &&
-        !product.category.includes("675dadfde9a2c0d93f9ba531")
+        !product.category.includes("675dadfde9a2c0d93f9ba531") // Danh mục mặc định
       ) {
         product.category.push("675dadfde9a2c0d93f9ba531");
         await product.save();

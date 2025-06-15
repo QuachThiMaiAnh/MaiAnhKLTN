@@ -1,6 +1,6 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod"; // Thư viện để tích hợp Zod với React Hook Form
+import { useForm } from "react-hook-form"; // React Hook Form để quản lý form state
+import { z } from "zod"; // Zod là thư viện để xác thực dữ liệu
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,46 +17,34 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion";
+} from "@/components/ui/accordion"; // Accordion để hiển thị ảnh danh mục
 
 import { Input } from "@/components/ui/input";
-// import { useCreateAttribute } from "../actions/useCreateAttribute";
-// import { useGetAttributeByID } from "../actions/useGetAttributeByID";
-import { useParams } from "react-router-dom";
+import { useParams } from "react-router-dom"; // useParams để lấy tham số từ URL
 import { useEffect, useState } from "react";
 import { useGetCategoryByID } from "../actions/useGetCategoryByID";
 import { useUpdateCategoryByID } from "../actions/useUpdateCategoryByID";
-import { uploadFile } from "@/lib/upload";
+import { uploadFile } from "@/lib/upload"; // Hàm upload file ảnh
 import { toast } from "@/components/ui/use-toast";
 import { FaCloudUploadAlt } from "react-icons/fa";
 import { Textarea } from "@/components/ui/textarea";
-// import { useUpdateAttributeByID } from "../actions/useUpdateAttributeByID";
 
+// Xác thực schema với zod, đảm bảo các trường cần thiết phải có
 const formSchema = z.object({
-  name: z.string().min(1, {
-    message: "Hãy viết tên danh mục",
-  }),
-  title: z.string().min(1, {
-    message: "Hãy viết tiêu đề danh mục",
-  }),
-  image: z.union([
-    z.string().url().or(z.literal("")), // URL hợp lệ hoặc chuỗi rỗng
-    z.instanceof(File), // File là tùy chọn
-  ]),
-  description: z.string().min(1, {
-    message: "Hãy viết mô tả danh mục",
-  }),
+  name: z.string().min(1, { message: "Hãy viết tên danh mục" }),
+  title: z.string().min(1, { message: "Hãy viết tiêu đề danh mục" }),
+  image: z.union([z.string().url().or(z.literal("")), z.instanceof(File)]),
+  description: z.string().min(1, { message: "Hãy viết mô tả danh mục" }),
 });
 
-const UpdateAttributePage = () => {
+const UpdateCategoryPage = () => {
   const { id } = useParams<{ id: string }>();
   const { updateCategory, isUpdating } = useUpdateCategoryByID(id!);
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string>("");
 
-  const { isLoadingCategory, category, error } = useGetCategoryByID(id!);
+  const { isLoading: isFetching, category } = useGetCategoryByID(id!);
 
-  // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -67,55 +55,52 @@ const UpdateAttributePage = () => {
     },
   });
 
-  const [previewImagesMain, setPreviewImagesMain] = useState<string | File>(
-    form.getValues("image") || ""
-  );
-
-  console.log("category", previewImagesMain);
-
-  // 2. Define a submit handler.
+  // Khi dữ liệu category được tải xong, cập nhật lại giá trị form và ảnh preview
   useEffect(() => {
     if (category) {
       form.reset(category);
-      setPreviewImagesMain(category.image);
+      setPreviewImage(category.image);
     }
   }, [category, form]);
 
-  if (isLoadingCategory) {
-    return <div>Loading...</div>;
-  }
+  // Hiển thị loading khi đang tải dữ liệu danh mục từ server
+  if (isFetching) return <div>Loading...</div>;
 
-  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+  // Khi người dùng chọn ảnh mới từ máy
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewImagesMain(reader.result as string); // Cập nhật preview với ảnh mới
-      };
+      reader.onloadend = () => setPreviewImage(reader.result as string); // Cập nhật ảnh preview từ dữ liệu đọc
       reader.readAsDataURL(file);
-      form.setValue("image", file); // Cập nhật giá trị ảnh trong form
+      form.setValue("image", file); // Gán file ảnh vào trường image của form
     }
-  }
+  };
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true);
-    let imageFormat = values.image;
-    if (typeof values.image !== "string")
-      imageFormat = await uploadFile(values.image as File);
+  // Xử lý khi submit form
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    try {
+      let imageUpload = values.image;
 
-    updateCategory({ ...values, image: imageFormat, _id: id });
-    setIsLoading(false);
-    toast({
-      variant: "success",
-      title: "Tạo danh mục thành công",
-    });
-  }
+      // Nếu ảnh là File thì upload lên, ngược lại giữ nguyên
+      if (values.image instanceof File) {
+        imageUpload = await uploadFile(values.image);
+      }
+
+      await updateCategory({ ...values, image: imageUpload, _id: id });
+      toast({ variant: "success", title: "Cập nhật danh mục thành công" });
+    } catch (err) {
+      toast({ variant: "destructive", title: "Cập nhật thất bại" });
+    }
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 ml-5">
         <h2 className="text-2xl font-medium">Cập nhật danh mục</h2>
 
         <div className="flex flex-col xl:flex-row gap-10">
+          {/* Cột trái: Thông tin text */}
           <div className="w-full">
             <FormField
               control={form.control}
@@ -127,14 +112,9 @@ const UpdateAttributePage = () => {
                     <Input
                       placeholder="Tên danh mục"
                       {...field}
-                      className={`${
-                        isLoading || isUpdating
-                          ? "opacity-50 pointer-events-none"
-                          : ""
-                      }`}
+                      disabled={isUpdating}
                     />
                   </FormControl>
-
                   <FormMessage />
                 </FormItem>
               )}
@@ -150,14 +130,9 @@ const UpdateAttributePage = () => {
                     <Input
                       placeholder="Tiêu đề danh mục"
                       {...field}
-                      className={`${
-                        isLoading || isUpdating
-                          ? "opacity-50 pointer-events-none"
-                          : ""
-                      }`}
+                      disabled={isUpdating}
                     />
                   </FormControl>
-
                   <FormMessage />
                 </FormItem>
               )}
@@ -174,60 +149,45 @@ const UpdateAttributePage = () => {
                       placeholder="Mô tả danh mục"
                       rows={7}
                       {...field}
-                      className={`${
-                        isLoading || isUpdating
-                          ? "opacity-50 pointer-events-none"
-                          : ""
-                      }`}
+                      disabled={isUpdating}
                     />
                   </FormControl>
-
                   <FormMessage />
                 </FormItem>
               )}
             />
           </div>
 
+          {/* Cột phải: ảnh danh mục */}
           <div className="w-full xl:w-1/2">
             <Accordion
-              className="bg-white border px-4"
               type="single"
               collapsible
               defaultValue="item-2"
+              className="bg-white border px-4"
             >
-              <AccordionItem className="border-none" value="item-2">
+              <AccordionItem value="item-2" className="border-none">
                 <AccordionTrigger className="no-underline">
                   Ảnh danh mục
                 </AccordionTrigger>
                 <AccordionContent>
-                  <div className="mt-2 flex">
-                    <input
-                      className="input-file__image"
-                      {...form.register("image")}
-                      type="file"
-                      hidden
-                      onChange={handleImageChange}
-                    />
-                  </div>
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="input-file__image"
+                  />
 
-                  {/* Preview Image */}
                   <div
-                    onClick={() => {
-                      const inputElement =
-                        document.querySelector(".input-file__image");
-                      if (inputElement) {
-                        (inputElement as HTMLInputElement).click();
-                      }
-                    }}
+                    onClick={() =>
+                      document.querySelector(".input-file__image")?.click()
+                    }
                     className="w-full min-h-56 max-h-56 border border-dashed border-blue-300 cursor-pointer rounded p-1 flex items-center justify-center overflow-hidden"
                   >
-                    {previewImagesMain ? (
+                    {previewImage ? (
                       <img
-                        src={
-                          typeof previewImagesMain === "string"
-                            ? previewImagesMain
-                            : ""
-                        }
+                        src={previewImage}
                         alt="Preview"
                         className="object-contain w-40 h-full"
                       />
@@ -240,7 +200,7 @@ const UpdateAttributePage = () => {
                     className="mt-2 text-red-500 underline cursor-pointer"
                     onClick={() => {
                       form.setValue("image", "");
-                      setPreviewImagesMain("");
+                      setPreviewImage("");
                     }}
                   >
                     Xóa ảnh
@@ -250,16 +210,17 @@ const UpdateAttributePage = () => {
             </Accordion>
           </div>
         </div>
+
         <Button
-          disabled={isUpdating}
           type="submit"
-          className={`${isLoading || isUpdating ? "opacity-30" : ""}`}
+          disabled={isUpdating}
+          className={isUpdating ? "opacity-30" : ""}
         >
-          {isUpdating ? "Đang tạo danh mục ..." : "Tạo danh mục"}
+          {isUpdating ? "Đang cập nhật..." : "Cập nhật danh mục"}
         </Button>
       </form>
     </Form>
   );
 };
 
-export default UpdateAttributePage;
+export default UpdateCategoryPage;

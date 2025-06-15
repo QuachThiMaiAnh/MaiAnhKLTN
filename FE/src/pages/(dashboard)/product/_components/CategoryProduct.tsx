@@ -44,8 +44,6 @@ const CategoryProduct = ({ form }: { form: FormTypeProductVariation }) => {
 
   if (isLoadingCategory) return <div>Loading...</div>;
 
-  // console.log(form.getValues("category"));
-
   return (
     <Accordion
       className="bg-white border px-4"

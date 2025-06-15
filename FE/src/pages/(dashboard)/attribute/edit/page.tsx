@@ -23,8 +23,8 @@ const formSchema = z.object({
 });
 
 const UpdateAttributePage = () => {
-  const { id } = useParams<{ id: string }>();
-  const { updateAttribute, isUpdating } = useUpdateAttributeByID(id!);
+  const { id } = useParams<{ id: string }>(); // Lấy id từ URL
+  const { updateAttribute, isUpdating } = useUpdateAttributeByID(id!); // Sử dụng hook để cập nhật thuộc tính theo ID
   const { isLoadingAttribute, attribute, error } = useGetAttributeByID(id!);
 
   // Khởi tạo form và validate với schema

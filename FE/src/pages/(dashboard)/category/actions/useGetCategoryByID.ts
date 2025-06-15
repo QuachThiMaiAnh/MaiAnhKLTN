@@ -3,13 +3,14 @@ import { getCategoryByID } from "./api";
 
 export function useGetCategoryByID(id: string) {
   const {
-    isLoading: isLoadingCategory,
+    isLoading,
     data: category,
     error,
   } = useQuery({
-    queryKey: ["Categories", id],
+    queryKey: ["Category", id],
     queryFn: () => getCategoryByID(id),
+    enabled: !!id, // Note: Tránh gọi API nếu id không tồn tại (null, undefined)
   });
 
-  return { isLoadingCategory, category, error };
+  return { isLoading, category, error };
 }

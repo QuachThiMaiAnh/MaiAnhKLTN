@@ -28,10 +28,10 @@ export function DataTable<TData, TValue>({
 }: DataTableProps<TData, TValue>) {
   // Khởi tạo table instance từ tanstack
   const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    data, // Dữ liệu bảng
+    columns, // Cấu hình cột
+    getCoreRowModel: getCoreRowModel(), // Lấy dữ liệu hàng cơ bản
+    getPaginationRowModel: getPaginationRowModel(), // Lấy dữ liệu phân trang
     initialState: {
       pagination: {
         pageSize: 20, // Mặc định 20 dòng/trang

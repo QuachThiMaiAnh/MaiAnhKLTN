@@ -49,12 +49,13 @@ export const getAttributeValueByAttributeId = async (req, res) => {
   const flag = _status === "hidden";
 
   try {
+    // Tìm thuộc tính cha và populate giá trị con
     const data = await Attribute.find({
       _id: req.params.id,
     }).populate({
       path: "values",
       model: "AttributeValue",
-      match: { deleted: flag },
+      match: { deleted: flag }, // Lọc theo trạng thái ẩn/hiển
       select: "-__v",
     });
 
@@ -76,7 +77,7 @@ export const getAttributeValueByAttributeId = async (req, res) => {
 export const createAttributeValue = async (req, res) => {
   try {
     const id = req.params.id; // ID của Attribute cha
-    const { name, value, type } = req.body;
+    const { name, value, type } = req.body; // Lấy thông tin giá trị thuộc tính từ body
 
     // Kiểm tra tên đã tồn tại chưa
     const checkName = await checkNameExist(name, id);

@@ -11,8 +11,18 @@ import { getIO } from "./socket";
 
 //=========================tạo đơn hàng mới===============
 export const createOrder = async (req, res) => {
-  const { userId, addressId, products, payment, totalPrice, discount, voucher, note, fullName, email } = req.body;
-  console.log("voucher", voucher);
+  const {
+    userId,
+    addressId,
+    products,
+    payment,
+    totalPrice,
+    discount,
+    voucher,
+    note,
+    fullName,
+    email,
+  } = req.body;
   try {
     let finalAddress = {};
     // Kiểm tra xem addressId có được cung cấp không
@@ -90,7 +100,11 @@ export const createOrder = async (req, res) => {
 
     if (voucher.length > 0) {
       // giảm số lượng của voucher
-      await Voucher.findOneAndUpdate({ _id: voucher[0]._id }, { countOnStock: voucher[0].countOnStock - 1 }, { new: true })
+      await Voucher.findOneAndUpdate(
+        { _id: voucher[0]._id },
+        { countOnStock: voucher[0].countOnStock - 1 },
+        { new: true }
+      );
       // console.log('giam so luonh')
       // thêm vào danh sách đã sử dụng voucher
       await VoucherUsage.create({ userId: userId, voucherId: voucher[0]._id });
@@ -106,7 +120,7 @@ export const createOrder = async (req, res) => {
       discount,
       totalPrice,
       fullName,
-      email
+      email,
     });
     // Lưu đơn hàng
     const savedOrder = await newOrder.save();
@@ -115,7 +129,7 @@ export const createOrder = async (req, res) => {
       { userId },
       {
         $pull: { products: { selected: true } }, // Xóa các mục được chọn trong products
-        $set: { voucher: [] }                   // Làm rỗng mảng voucher
+        $set: { voucher: [] }, // Làm rỗng mảng voucher
       }
     );
 
@@ -130,10 +144,20 @@ export const createOrder = async (req, res) => {
   }
 };
 
-
 // tạo orderVnpay
 export const createOrderVnpay = async (req, res) => {
-  const { userId, addressId, products, payment, totalPrice, discount, voucher, note, fullName, email } = req.body;
+  const {
+    userId,
+    addressId,
+    products,
+    payment,
+    totalPrice,
+    discount,
+    voucher,
+    note,
+    fullName,
+    email,
+  } = req.body;
   try {
     let finalAddress = {};
     // Kiểm tra xem addressId có được cung cấp không
@@ -153,7 +177,6 @@ export const createOrderVnpay = async (req, res) => {
     //     message: `Sản phẩm hoặc biến thể đã bị xóa`,
     //   });
     // }
-
 
     if (!products || !Array.isArray(products) || products.length === 0) {
       return res
@@ -219,7 +242,11 @@ export const createOrderVnpay = async (req, res) => {
 
     if (voucher.length > 0) {
       // giảm số lượng của voucher
-      await Voucher.findOneAndUpdate({ _id: voucher[0]._id }, { countOnStock: voucher[0].countOnStock - 1 }, { new: true })
+      await Voucher.findOneAndUpdate(
+        { _id: voucher[0]._id },
+        { countOnStock: voucher[0].countOnStock - 1 },
+        { new: true }
+      );
       // console.log('giam so luonh')
       // thêm vào danh sách đã sử dụng voucher
       await VoucherUsage.create({ userId: userId, voucherId: voucher[0]._id });
@@ -236,7 +263,7 @@ export const createOrderVnpay = async (req, res) => {
       discount,
       totalPrice,
       fullName,
-      email
+      email,
     });
     // Lưu đơn hàng
     const savedOrder = await newOrder.save();
@@ -249,7 +276,7 @@ export const createOrderVnpay = async (req, res) => {
     await cart.updateOne(
       { userId },
       {
-        $set: { voucher: [] }   // Làm rỗng mảng voucher
+        $set: { voucher: [] }, // Làm rỗng mảng voucher
       }
     );
     return res
@@ -262,13 +289,12 @@ export const createOrderVnpay = async (req, res) => {
       .json({ message: "Lỗi khi tạo đơn hàng", error: error.message });
   }
 };
-// xóa giỏ hàng 
+// xóa giỏ hàng
 
 export const deleteCart = async (req, res) => {
   const { userId, products } = req.body;
 
   try {
-
     for (let item of products) {
       const { variantItem, quantity, productItem } = item;
 
@@ -317,13 +343,20 @@ export const deleteCart = async (req, res) => {
 
     // Kiểm tra nếu giỏ hàng đã được cập nhật
     if (result.modifiedCount > 0) {
-      return res.status(200).json({ message: "Giỏ hàng đã được xóa thành công." });
+      return res
+        .status(200)
+        .json({ message: "Giỏ hàng đã được xóa thành công." });
     } else {
-      return res.status(404).json({ message: "Không tìm thấy giỏ hàng của người dùng hoặc không có sản phẩm nào để xóa." });
+      return res.status(404).json({
+        message:
+          "Không tìm thấy giỏ hàng của người dùng hoặc không có sản phẩm nào để xóa.",
+      });
     }
   } catch (error) {
     console.error("Lỗi khi xóa giỏ hàng:", error);
-    return res.status(500).json({ message: "Đã có lỗi xảy ra khi xóa giỏ hàng." });
+    return res
+      .status(500)
+      .json({ message: "Đã có lỗi xảy ra khi xóa giỏ hàng." });
   }
 };
 
@@ -499,8 +532,6 @@ export const updateOrderStatus = async (req, res) => {
         break;
     }
 
-
-
     // Xử lý thêm thông tin khi chuyển trạng thái sang 'đã hủy'
     if (newStatus === "hủy đơn") {
       if (!reason) {
@@ -545,7 +576,7 @@ export const updateOrderStatus = async (req, res) => {
         }
         const products = await Product.findById(productItem._id);
         if (products) {
-          products.countOnStock += quantity
+          products.countOnStock += quantity;
           await products.save();
         }
         const productVariant = await Variant.findById(variantItem._id);
@@ -597,7 +628,6 @@ export const updateOrderStatus = async (req, res) => {
   }
 };
 
-
 //  trạng thái vnpay
 export const UpdateStatusVnpay = async (req, res) => {
   try {
@@ -605,7 +635,7 @@ export const UpdateStatusVnpay = async (req, res) => {
     const { isPaid } = req.body; // Chỉ nhận orderId và isPaid
 
     // Kiểm tra nếu thiếu thông tin từ yêu cầu
-    if (!id || typeof isPaid !== 'boolean') {
+    if (!id || typeof isPaid !== "boolean") {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message: "Thông tin yêu cầu không đầy đủ hoặc không hợp lệ.",
       });
@@ -675,7 +705,6 @@ export const UpdateStatusVnpay = async (req, res) => {
 //   }
 // };
 
-
 export const deleteOrder = async (req, res) => {
   const { id } = req.params;
 
@@ -732,7 +761,7 @@ export const deleteOrder = async (req, res) => {
 
     const io = getIO();
 
-    io.emit('order', "Luong")
+    io.emit("order", "Luong");
 
     return res.status(StatusCodes.OK).json({
       message: "Đơn hàng đã được xóa thành công",
@@ -802,7 +831,7 @@ export const deleteOrderAdmin = async (req, res) => {
 
     const io = getIO();
 
-    io.emit('order', "Luong")
+    io.emit("order", "Luong");
 
     return res.status(StatusCodes.OK).json({
       message: "Đơn hàng đã được xóa thành công",
@@ -815,4 +844,3 @@ export const deleteOrderAdmin = async (req, res) => {
     });
   }
 };
-

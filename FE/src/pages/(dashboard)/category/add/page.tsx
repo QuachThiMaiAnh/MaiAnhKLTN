@@ -11,6 +11,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+
 import {
   Accordion,
   AccordionContent,
@@ -24,32 +25,30 @@ import { useState } from "react";
 import { FaCloudUploadAlt } from "react-icons/fa";
 import { Textarea } from "@/components/ui/textarea";
 import { uploadFile } from "@/lib/upload";
-import { toast } from "@/components/ui/use-toast";
 
+// Note: Lược sử dụng để xác thực dữ liệu đầu vào của form
 const formSchema = z.object({
-  name: z.string().min(1, {
-    message: "Hãy viết tên danh mục",
-  }),
-  title: z.string().min(1, {
-    message: "Hãy viết tiêu đề danh mục",
-  }),
-  image: z.union([
-    z.string().url().or(z.literal("")), // URL hợp lệ hoặc chuỗi rỗng
-    z.instanceof(File), // File là tùy chọn
-  ]),
-  description: z.string().min(1, {
-    message: "Hãy viết mô tả danh mục",
-  }),
+  name: z.string().min(1, { message: "Hãy viết tên danh mục" }),
+  title: z.string().min(1, { message: "Hãy viết tiêu đề danh mục" }),
+  /*
+    z.union([...]): cho phép giá trị là một trong các loại được chỉ định trong mảng.
+
+    z.string().url(): chuỗi là một URL hợp lệ (ví dụ: "https://example.com/image.jpg").
+
+    .or(z.literal("")): hoặc là chuỗi rỗng (""). Điều này hữu ích khi trường image chưa có giá trị nào được nhập.
+
+    z.instanceof(File): hoặc là một File (ví dụ: khi người dùng upload hình ảnh từ local).
+   */
+  image: z.union([z.string().url().or(z.literal("")), z.instanceof(File)]),
+  description: z.string().min(1, { message: "Hãy viết mô tả danh mục" }),
 });
 
 const CategoryAddPage = () => {
-  const { createCategory, isCreatting } = useCreateCategory();
-  const [previewImagesMain, setPreviewImagesMain] = useState<string | File>("");
-  const [isLoading, setIsLoading] = useState(false);
+  const { createCategory, isCreating } = useCreateCategory(); // Note: Sử dụng hook để gọi API tạo danh mục
+  const [previewImage, setPreviewImage] = useState<string>(""); // Note: State để lưu preview ảnh
 
-  // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema), // Note: Sử dụng zod để xác thực dữ liệu form
     defaultValues: {
       name: "",
       title: "",
@@ -58,35 +57,45 @@ const CategoryAddPage = () => {
     },
   });
 
-  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  // Note: Cập nhật preview và giá trị ảnh trong form
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; // Lấy file đầu tiên nếu có
+
+    // Nếu có file, đọc nó và cập nhật preview
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewImagesMain(reader.result as string); // Cập nhật preview với ảnh mới
-      };
-      reader.readAsDataURL(file);
+      const reader = new FileReader(); // Tạo FileReader để đọc file
+      reader.onloadend = () => setPreviewImage(reader.result as string); // Cập nhật preview khi đọc xong
+      reader.readAsDataURL(file); // Đọc file dưới dạng Data URL
       form.setValue("image", file); // Cập nhật giá trị ảnh trong form
     }
-  }
+  };
 
-  // 2. Define a submit handler.
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true);
-    const imageFormat = await uploadFile(values.image as File);
-    createCategory({ ...values, image: imageFormat });
-    setIsLoading(false);
-    toast({
-      variant: "success",
-      title: "Tạo danh mục thành công",
-    });
-  }
+  // Note: Submit handler xử lý upload ảnh nếu cần, sau đó gọi API tạo danh mục
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    try {
+      let finalImage = values.image;
+
+      // Nếu là File thì mới upload
+      if (values.image instanceof File) {
+        finalImage = await uploadFile(values.image); // Upload file và lấy URL
+      }
+
+      // Gọi API tạo danh mục với giá trị đã chuẩn bị
+      await createCategory({ ...values, image: finalImage });
+      form.reset(); // Reset lại form sau khi tạo thành công
+      setPreviewImage("");
+    } catch (error) {
+      console.error("Error creating category:", error);
+    }
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 ml-5">
         <h2 className="text-2xl font-medium">Thêm danh mục</h2>
 
         <div className="flex flex-col xl:flex-row gap-10">
+          {/* Cột trái: Thông tin văn bản */}
           <div className="w-full">
             <FormField
               control={form.control}
@@ -98,14 +107,9 @@ const CategoryAddPage = () => {
                     <Input
                       placeholder="Tên danh mục"
                       {...field}
-                      className={`${
-                        isLoading || isCreatting
-                          ? "opacity-50 pointer-events-none"
-                          : ""
-                      }`}
+                      disabled={isCreating}
                     />
                   </FormControl>
-
                   <FormMessage />
                 </FormItem>
               )}
@@ -121,14 +125,9 @@ const CategoryAddPage = () => {
                     <Input
                       placeholder="Tiêu đề danh mục"
                       {...field}
-                      className={`${
-                        isLoading || isCreatting
-                          ? "opacity-50 pointer-events-none"
-                          : ""
-                      }`}
+                      disabled={isCreating}
                     />
                   </FormControl>
-
                   <FormMessage />
                 </FormItem>
               )}
@@ -145,60 +144,45 @@ const CategoryAddPage = () => {
                       placeholder="Mô tả danh mục"
                       rows={7}
                       {...field}
-                      className={`${
-                        isLoading || isCreatting
-                          ? "opacity-50 pointer-events-none"
-                          : ""
-                      }`}
+                      disabled={isCreating}
                     />
                   </FormControl>
-
                   <FormMessage />
                 </FormItem>
               )}
             />
           </div>
 
+          {/* Cột phải: Ảnh danh mục */}
           <div className="w-full xl:w-1/2">
             <Accordion
-              className="bg-white border px-4"
               type="single"
               collapsible
               defaultValue="item-2"
+              className="bg-white border px-4"
             >
-              <AccordionItem className="border-none" value="item-2">
+              <AccordionItem value="item-2" className="border-none">
                 <AccordionTrigger className="no-underline">
                   Ảnh danh mục
                 </AccordionTrigger>
                 <AccordionContent>
-                  <div className="mt-2 flex">
-                    <input
-                      className="input-file__image"
-                      {...form.register("image")}
-                      type="file"
-                      hidden
-                      onChange={handleImageChange}
-                    />
-                  </div>
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="input-file__image"
+                  />
 
-                  {/* Preview Image */}
                   <div
-                    onClick={() => {
-                      const inputElement =
-                        document.querySelector(".input-file__image");
-                      if (inputElement) {
-                        (inputElement as HTMLInputElement).click();
-                      }
-                    }}
+                    onClick={() =>
+                      document.querySelector(".input-file__image")?.click()
+                    }
                     className="w-full min-h-56 max-h-56 border border-dashed border-blue-300 cursor-pointer rounded p-1 flex items-center justify-center overflow-hidden"
                   >
-                    {previewImagesMain ? (
+                    {previewImage ? (
                       <img
-                        src={
-                          typeof previewImagesMain === "string"
-                            ? previewImagesMain
-                            : ""
-                        }
+                        src={previewImage}
                         alt="Preview"
                         className="object-contain w-40 h-full"
                       />
@@ -210,8 +194,8 @@ const CategoryAddPage = () => {
                   <p
                     className="mt-2 text-red-500 underline cursor-pointer"
                     onClick={() => {
-                      form.setValue("image", "");
-                      setPreviewImagesMain("");
+                      form.setValue("image", ""); // Reset giá trị ảnh trong form
+                      setPreviewImage("");
                     }}
                   >
                     Xóa ảnh
@@ -221,12 +205,13 @@ const CategoryAddPage = () => {
             </Accordion>
           </div>
         </div>
+
         <Button
-          disabled={isCreatting}
           type="submit"
-          className={`${isLoading || isCreatting ? "opacity-30" : ""}`}
+          disabled={isCreating}
+          className={isCreating ? "opacity-30" : ""}
         >
-          {isCreatting ? "Đang tạo danh mục ..." : "Tạo danh mục"}
+          {isCreating ? "Đang tạo danh mục..." : "Tạo danh mục"}
         </Button>
       </form>
     </Form>

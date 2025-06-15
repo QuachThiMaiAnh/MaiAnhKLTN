@@ -1,4 +1,3 @@
-
 export interface OrderResponse {
   message: string;
   order: { status: string }; // Cấu trúc order tùy theo backend của bạn
@@ -28,7 +27,7 @@ export type CommentProducts = {
   deleted?: boolean;
   rating: number;
   createdAt: Date;
-}
+};
 
 export interface Address {
   _id: string;
@@ -132,7 +131,6 @@ export interface OrderProduct {
   discount: number;
   subTotal: number;
 }
-
 
 export interface OrderProductList {
   _id: string;
