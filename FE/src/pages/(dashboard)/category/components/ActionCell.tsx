@@ -26,8 +26,6 @@ const ActionCell: React.FC<ActionCellProps> = ({ row }) => {
   const { isGetting, productCount, errorGetting } =
     useGetAllProductWithCategory(row.original._id);
 
-  // console.log("countProduct", countProduct);
-
   const handleDelete = async () => {
     if (
       confirm(
@@ -38,7 +36,7 @@ const ActionCell: React.FC<ActionCellProps> = ({ row }) => {
         await deleteCategoryById(row.original._id);
       } catch (error) {
         console.error("Lỗi khi ẩn danh mục:", error);
-        alert("Ẩn thất bại, vui lòng thử lại.x");
+        alert("Ẩn thất bại, vui lòng thử lại.");
       }
     }
   };

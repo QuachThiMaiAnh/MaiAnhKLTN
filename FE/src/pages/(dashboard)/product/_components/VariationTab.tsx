@@ -53,14 +53,13 @@ const VariationTab = ({
     React.SetStateAction<{ [key: string]: string | "" }>
   >;
 }) => {
+  // Lựa chọn thao tác hàng loạt (tạo biến thể, xóa tất cả, đồng giá, đồng tồn kho,...)
   const [stateSelect, setStateSelect] = useState<string>("create");
 
-  // const [previewImages, setPreviewImages] = useState<{
-  //   [key: string]: string | null;
-  // }>({});
-
+  // Danh sách các accordion (biến thể) đang mở
   const [openItems, setOpenItems] = useState<string[]>([]);
 
+  // Khi có lỗi ở biến thể, tự động mở các accordion tương ứng để người dùng dễ sửa.
   useEffect(() => {
     const errorKeys = Object.keys(form.formState.errors.variants || {}).map(
       (index) => `variant-${index}`
@@ -69,16 +68,6 @@ const VariationTab = ({
     // Mở các mục có lỗi
     setOpenItems((prev) => [...new Set([...prev, ...errorKeys])]);
   }, [form.formState.errors]);
-
-  // useEffect(() => {
-  //   const initialImages = fields.reduce((acc, field) => {
-  //     if (field.image) {
-  //       acc[field.id] = field.image; // Use the existing image URL
-  //     }
-  //     return acc;
-  //   }, {} as { [key: string]: string | null });
-  //   setPreviewImages(initialImages);
-  // }, [fields]);
 
   const handleImageChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -99,12 +88,20 @@ const VariationTab = ({
   };
 
   const handleButtonClick = () => {
+    //o	Tạo biến thể: Sinh biến thể từ tổ hợp giá trị thuộc tính đã chọn.
     if (stateSelect === "create") {
       if (stateAttribute.valuesMix.length !== 0) {
+        // Lấy danh sách các loại thuộc tính từ stateAttribute (type)
         const typesFromReducer = getUniqueTypesFromFields(
           stateAttribute.attributesChoose
         );
 
+        /**
+         * Nếu loại thuộc tính không thay đổi (areArraysEqual trả về true):
+            Cập nhật lại các biến thể hiện có bằng hàm updateFields (giữ lại các giá trị đã nhập trước đó nếu có thể).
+            Nếu loại thuộc tính đã thay đổi:
+            Tạo mới hoàn toàn danh sách biến thể từ tổ hợp giá trị (formatDataLikeFields).
+         */
         const newFields = areArraysEqual(
           typeFields as string[],
           typesFromReducer as string[]
@@ -121,10 +118,12 @@ const VariationTab = ({
       }
     }
 
+    // o	Xóa tất cả: Xóa toàn bộ biến thể.
     if (stateSelect === "deleteAll") {
       replaceFields([]);
     }
 
+    //o	Đồng bộ số lượng tồn kho/giá bán/giá gốc/giá giảm giá: Hiển thị prompt để nhập giá trị, sau đó cập nhật cho tất cả biến thể.
     if (stateSelect === "countOnStock") {
       const value = prompt("Nhập số lượng tồn kho cho tất cả biến thể");
 
@@ -178,7 +177,9 @@ const VariationTab = ({
 
   const matchingAttributes = getAttributesUsedInArray(fields, attributes);
 
-  // console.log(form.getValues("variants"));
+  // console.log("matchingAttributes: ", matchingAttributes); // Thuộc tính nào đang được sử dụng trong biến thể
+  console.log("Biến thể: ", form.getValues("variants"));
+  // console.log("fields:", fields);
   // console.log(previewImages);
 
   return (
@@ -251,7 +252,7 @@ const VariationTab = ({
                                   );
                                 }}
                               >
-                                {attribute.values.map((value : VariantItem) => {
+                                {attribute.values.map((value: VariantItem) => {
                                   return (
                                     <option key={value._id} value={value._id}>
                                       {value.name}

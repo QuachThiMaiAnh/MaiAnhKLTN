@@ -65,7 +65,7 @@ export const getAttributeValueByAttributeId = async (req, res) => {
         .json({ message: "Không tìm thấy giá trị thuộc tính" });
     }
 
-    res.status(200).json(data);
+    res.status(200).json(data); // Trả về mảng
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

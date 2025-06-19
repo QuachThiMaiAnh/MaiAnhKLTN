@@ -8,6 +8,7 @@ import {
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+// Hàm để kết hợp các class và loại bỏ các class trùng lặp
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -103,21 +104,21 @@ export function getSelectedValues(
         acc[attribute._id] = item;
       }
     });
-
     return acc;
 
-    // console.log("attr: ", attr);
-
-    // const matchedValues = valueAttributeProduct[index]; // Lấy các giá trị tương ứng từ array1 theo index
-
-    // console.log("matchedValues: ", matchedValues);
-
-    // if (attribute.name == matchedValues?.[0].type) {
-    //   // console.log("mâttch: ", acc);
-    //   // console.log("acc[attribute._id]: ", acc);
-    //   acc[attribute._id] = matchedValues; // Gán mảng giá trị từ array1 vào acc với khóa là _id của attribute
-    // }
-    // return acc;
+    /**
+     * 
+{675e387b5cccfd8536c5f0e3: Array(3), 675db53037f987574e4e4a88: Array(1)}
+675db53037f987574e4e4a88
+: 
+Array(1)
+0
+: 
+{value: 'Free size', label: 'Free size', _id: '6842d77f6b8d7a81f97b9555', type: 'Kích cỡ'}
+length
+: 
+1
+     */
   }, {});
 }
 
@@ -146,6 +147,7 @@ export const getAttributesUsedInArray = (array1, attributes) => {
 };
 
 export function formatDataLikeFields(valeMix: Data[][]) {
+  //  [[{ type: "màu sắc", _id: "123", lable: "Đỏ", value: "#887766" },{}], [{ type: "kích thước", _id: "456", lable: "L", value: "L" },{}]];  Data[][]
   return valeMix.map((group) => ({
     price: 0,
     values: group.map((item) => ({
@@ -194,7 +196,7 @@ export const checkForDuplicateVariants = (data: IProduct) => {
     // Tạo khóa duy nhất dựa trên các thuộc tính chính
     const variantKey = variant.values
       .map((valueObj) => `${valueObj.type}:${valueObj._id}`)
-      .join("|");
+      .join("|"); // Tạo khóa duy nhất cho từng variant: "type1:id1|type2:id2|..."
 
     if (variantSet.has(variantKey)) {
       // Nếu trùng, thêm vị trí hiện tại vào duplicateIndices

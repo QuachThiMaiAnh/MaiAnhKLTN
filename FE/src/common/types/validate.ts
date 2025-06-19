@@ -77,7 +77,7 @@ export const productSchema = z.object({
   image: z.union([
     z.string().url().or(z.literal("")),
     z.instanceof(File).optional(),
-  ]),
+  ]), // Ảnh đại diện sản phẩm (có thể là URL hoặc File)
 
   price: z.coerce.number().optional(), // Giá bán thông thường
   priceSale: z.coerce.number().optional(), // Giá giảm giá (nếu có)

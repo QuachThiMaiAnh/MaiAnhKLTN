@@ -1,12 +1,14 @@
+import { useEffect, useState } from "react";
 import { useCategory } from "@/common/hooks/useCategory";
 import { FormTypeProductVariation } from "@/common/types/validate";
+
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import {
   FormControl,
   FormField,
@@ -14,7 +16,11 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useEffect, useState } from "react";
+
+import { Checkbox } from "@/components/ui/checkbox";
+
+// Lấy ID danh mục mặc định từ biến môi trường
+const DEFAULT_CATEGORY_ID = import.meta.env.VITE_DEFAULT_CATEGORY_ID;
 
 type Category = {
   _id: string;
@@ -25,24 +31,50 @@ type Category = {
 };
 
 const CategoryProduct = ({ form }: { form: FormTypeProductVariation }) => {
-  const defaultCategory = "675dadfde9a2c0d93f9ba531";
-
-  const { category, isLoadingCategory } = useCategory();
-
+  const { category, isLoadingCategory } = useCategory(); // Sử dụng hook để lấy danh mục sản phẩm
   const [accordionValue, setAccordionValue] = useState<string | undefined>(
     "item-3"
   );
 
+  // Gán mặc định danh mục nếu chưa có danh mục nào được chọn
   useEffect(() => {
     const selectedCategories = form.getValues("category") || [];
-
-    // Nếu không có danh mục nào được chọn, thêm `defaultCategory`
     if (selectedCategories.length === 0) {
-      form.setValue("category", [defaultCategory], { shouldValidate: true });
+      form.setValue("category", [DEFAULT_CATEGORY_ID], {
+        // Cập nhật giá trị mặc định
+        shouldValidate: true,
+      });
     }
   }, [form]);
 
-  if (isLoadingCategory) return <div>Loading...</div>;
+  // Hiển thị loading
+  if (isLoadingCategory) return <div>Đang tải danh mục...</div>;
+
+  // Xử lý khi click checkbox
+  const handleCategoryChange = (
+    checked: boolean, // Trạng thái checkbox
+    categoryId: string, // ID danh mục
+    currentValues: string[] // Các giá trị hiện tại đã chọn (_id của các danh mục đã chọn)
+  ) => {
+    let updatedValues = checked
+      ? [...currentValues, categoryId] // Nếu checked, thêm ID danh mục vào danh sách đã chọn
+      : currentValues.filter((id) => id !== categoryId); // Nếu không checked, loại bỏ ID danh mục khỏi danh sách đã chọn
+
+    // Nếu chọn danh mục mới khác default -> bỏ default
+    if (
+      categoryId !== DEFAULT_CATEGORY_ID &&
+      updatedValues.includes(DEFAULT_CATEGORY_ID)
+    ) {
+      updatedValues = updatedValues.filter((id) => id !== DEFAULT_CATEGORY_ID); // Loại bỏ danh mục mặc định nếu đã chọn danh mục khác
+    }
+
+    // Nếu bỏ hết danh mục → thêm lại mặc định
+    if (updatedValues.length === 0) {
+      updatedValues = [DEFAULT_CATEGORY_ID]; // Nếu không có danh mục nào được chọn, thêm lại danh mục mặc định
+    }
+
+    return updatedValues; // Trả về danh sách đã cập nhật
+  };
 
   return (
     <Accordion
@@ -50,69 +82,52 @@ const CategoryProduct = ({ form }: { form: FormTypeProductVariation }) => {
       type="single"
       collapsible
       value={accordionValue}
-      onValueChange={(value) => setAccordionValue(value)}
+      onValueChange={(value) => setAccordionValue(value)} // Cập nhật giá trị accordion khi thay đổi (ví dụ: khi mở hoặc đóng accordion)
     >
       <AccordionItem className="border-none" value="item-3">
-        <AccordionTrigger className="no-underline">Danh mục</AccordionTrigger>
+        <AccordionTrigger className="no-underline font-bold">
+          Danh mục
+        </AccordionTrigger>
         <AccordionContent>
           <FormField
             control={form.control}
             name="category"
             render={() => (
               <FormItem>
-                {category?.data?.map((item: Category) => (
-                  <FormField
-                    key={item._id}
-                    control={form.control}
-                    name="category"
-                    render={({ field }) => {
-                      // console.log(item);
-                      return (
-                        <FormItem
-                          key={item._id}
-                          className="flex flex-row items-start space-x-2 space-y-0 mb-2"
-                        >
+                {category?.map(
+                  (
+                    item: Category // Lặp qua danh sách danh mục
+                  ) => (
+                    <FormField
+                      key={item._id}
+                      control={form.control}
+                      name="category"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-2 space-y-0 mb-2">
                           <FormControl>
                             <Checkbox
-                              checked={field.value?.includes(item._id)} // Tích khi item thuộc mảng category
-                              onCheckedChange={(checked) => {
-                                let updatedValues = checked
-                                  ? [...(field.value || []), item._id] // Thêm danh mục
-                                  : field.value?.filter(
-                                      (value) => value !== item._id
-                                    ); // Loại bỏ danh mục
-
-                                // Nếu danh mục được chọn không phải `defaultCategory`, loại bỏ `defaultCategory`
-                                if (
-                                  item._id !== defaultCategory &&
-                                  updatedValues?.includes(defaultCategory)
-                                ) {
-                                  updatedValues = updatedValues.filter(
-                                    (value) => value !== defaultCategory
-                                  );
-                                }
-
-                                // Nếu không có danh mục nào được chọn, thêm `defaultCategory`
-                                if (
-                                  !updatedValues ||
-                                  updatedValues.length === 0
-                                ) {
-                                  updatedValues = [defaultCategory];
-                                }
-
-                                // Cập nhật giá trị
-                                field.onChange(updatedValues);
-                              }}
+                              checked={field.value?.includes(item._id)} // Kiểm tra xem danh mục hiện tại có được chọn không
+                              onCheckedChange={(
+                                checked // Xử lý sự kiện khi checkbox được chọn hoặc bỏ chọn
+                              ) =>
+                                field.onChange(
+                                  handleCategoryChange(
+                                    Boolean(checked), // Chuyển đổi checked thành boolean
+                                    item._id, // ID của danh mục hiện tại
+                                    field.value || []
+                                  )
+                                )
+                              }
                             />
                           </FormControl>
                           <FormLabel className="font-normal">
                             {item.name}
                           </FormLabel>
                         </FormItem>
-                      );
-                    }}
-                  />
-                ))}
+                      )}
+                    />
+                  )
+                )}
                 <FormMessage />
               </FormItem>
             )}
@@ -124,3 +139,15 @@ const CategoryProduct = ({ form }: { form: FormTypeProductVariation }) => {
 };
 
 export default CategoryProduct;
+
+/**
+ Form CategoryProduct dùng để:
+
+Cho phép chọn nhiều danh mục sản phẩm (checkbox).
+
+Nếu chưa chọn danh mục nào, hệ thống sẽ tự động chọn 1 danh mục mặc định (DEFAULT_CATEGORY_ID).
+
+Nếu người dùng chọn thêm danh mục khác ➝ loại bỏ danh mục mặc định.
+
+Nếu người dùng bỏ chọn hết ➝ tự thêm lại danh mục mặc định.
+ */

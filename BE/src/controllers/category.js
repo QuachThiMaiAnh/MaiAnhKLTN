@@ -173,7 +173,7 @@ export const deleteCategory = async (req, res) => {
     });
 
     for (const product of products) {
-      // Nếu sản phẩm chỉ có 1 danh mục, thêm danh mục mặc định
+      // Nếu sản phẩm chỉ có 1 danh mục (category), thêm danh mục mặc định
       if (
         Array.isArray(product.category) &&
         product.category.length <= 1 &&
@@ -184,6 +184,7 @@ export const deleteCategory = async (req, res) => {
       }
     }
 
+    // Đánh dấu danh mục là đã bị ẩn (soft-delete)
     category.deleted = true;
     await category.save();
 
@@ -204,6 +205,7 @@ export const displayCategory = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy danh mục" });
     }
 
+    // Đánh dấu danh mục là đã hiển thị (soft-undelete)
     category.deleted = false;
     await category.save();
 

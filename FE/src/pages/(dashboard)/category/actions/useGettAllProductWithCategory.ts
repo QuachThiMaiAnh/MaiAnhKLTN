@@ -8,7 +8,7 @@ export function useGetAllProductWithCategory(id: string) {
     error,
   } = useQuery({
     queryKey: ["CategoryProductCount", id],
-    queryFn: () => getAllProductWithCategory(id),
+    queryFn: () => getAllProductWithCategory(id), // Gọi API để lấy số lượng sản phẩm theo danh mục
     enabled: !!id, // Note: Tránh gọi API nếu ID chưa có
   });
 

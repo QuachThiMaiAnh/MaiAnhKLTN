@@ -8,7 +8,7 @@ import { useParams, useSearchParams } from "react-router-dom";
  * @param id - ID của AttributeValue cần cập nhật
  */
 export const useUpdateAttributeValue = (id: string) => {
-  const { id: idAttr } = useParams(); // Lấy id của Attribute từ URL
+  const { id: idAttr } = useParams(); // Lấy id của AttributeValue từ URL
   const [searchParams] = useSearchParams();
 
   const statusDisplay = searchParams.get("status");

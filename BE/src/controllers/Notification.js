@@ -169,11 +169,9 @@ export const markAsReadByAdmin = async (req, res) => {
     // Nếu id là "all", đánh dấu tất cả thông báo của admin là đã đọc
     if (id === "all") {
       await Notification.updateMany({}, { isReadByAdmin: true });
-      return res
-        .status(200)
-        .json({
-          message: "Tất cả thông báo đã được admin đánh dấu là đã đọc!",
-        });
+      return res.status(200).json({
+        message: "Tất cả thông báo đã được admin đánh dấu là đã đọc!",
+      });
     }
 
     // Tìm thông báo theo id

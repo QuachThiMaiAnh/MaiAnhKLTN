@@ -34,8 +34,8 @@ const UpdateAttributeValuePage = () => {
 
   const { isLoadingAtributeValue, atributeValue } = useGetAttributeValueByID(
     id!
-  );
-  const { updateAttributeValue, isUpdating } = useUpdateAttributeValue(id!);
+  ); // Lấy chi tiết giá trị thuộc tính theo ID
+  const { updateAttributeValue, isUpdating } = useUpdateAttributeValue(id!); // Cập nhật giá trị thuộc tính
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

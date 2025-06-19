@@ -63,7 +63,7 @@ export async function createAttributeValues(
  * @param data - Dữ liệu cập nhật (name, type, value)
  */
 export async function updateAttributeValueByID(
-  id: string, // ID của AttributeValue cần cập nhật
+  id: string,
   data: {
     name: string;
     type: string;

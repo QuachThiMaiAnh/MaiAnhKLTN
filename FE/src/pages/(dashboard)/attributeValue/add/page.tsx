@@ -45,6 +45,8 @@ const CreateAttributeValuePage = () => {
     },
   });
 
+  // attributeValues là [attribute]
+
   // Khi đổi typeValue hoặc thuộc tính được load, gán loại vào trường `type`
   useEffect(() => {
     if (atributeValues && atributeValues.length > 0) {

@@ -30,15 +30,6 @@ import { uploadFile } from "@/lib/upload";
 const formSchema = z.object({
   name: z.string().min(1, { message: "Hãy viết tên danh mục" }),
   title: z.string().min(1, { message: "Hãy viết tiêu đề danh mục" }),
-  /*
-    z.union([...]): cho phép giá trị là một trong các loại được chỉ định trong mảng.
-
-    z.string().url(): chuỗi là một URL hợp lệ (ví dụ: "https://example.com/image.jpg").
-
-    .or(z.literal("")): hoặc là chuỗi rỗng (""). Điều này hữu ích khi trường image chưa có giá trị nào được nhập.
-
-    z.instanceof(File): hoặc là một File (ví dụ: khi người dùng upload hình ảnh từ local).
-   */
   image: z.union([z.string().url().or(z.literal("")), z.instanceof(File)]),
   description: z.string().min(1, { message: "Hãy viết mô tả danh mục" }),
 });

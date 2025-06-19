@@ -44,7 +44,6 @@ const LayoutAdmin = () => {
       const saveUserIfNeeded = async () => {
         if (user && !isUserSaved.current) {
           try {
-            console.log("user", user.id);
             const data = await saveUserToDatabase(user.id);
             // console.log("data", data);
             login(data); // Lưu _id vào context

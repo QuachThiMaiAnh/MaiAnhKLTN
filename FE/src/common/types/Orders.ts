@@ -228,20 +228,20 @@ export interface AttributeValue {
 
 export interface Data {
   _id: string;
-  value: string;
-  label: string;
-  type: string;
+  value: string; // value là giá trị thực tế của AttributeValue
+  label: string; // label là tên hiển thị của giá trị === name của AttributeValue
+  type: string; // tên thuộc tính
 }
 
 export interface State {
-  attributesChoose: Attribute[];
+  attributesChoose: Attribute[]; // attributesChoose là mảng các thuộc tính đã chọn
   valuesChoose: Data[][];
   valuesMix: Data[][];
 }
 
 export type Action =
   | { type: "ADD_ATTRIBUTE"; payload: Attribute } // payload chắc chắn là Attribute
-  | { type: "ADD_VALUE"; payload: Data[] } // payload là mảng Data[]
+  | { type: "ADD_VALUE"; payload: Data[][] } // payload là mảng Data[]
   | { type: "DELETE_ONE_VALUE"; payload: string }
   | { type: "MIX_VALUES" }
   | { type: "UPDATE_ATTRIBUTES"; payload: Attribute }

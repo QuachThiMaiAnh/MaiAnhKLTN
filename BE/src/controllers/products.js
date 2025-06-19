@@ -307,75 +307,95 @@ export const createProduct = async (req, res) => {
       priceSale,
       description,
       descriptionDetail,
-      category,
-      variants,
+      category = [],
+      variants = [],
     } = req.body;
 
     const slug = slugify(name, "-");
 
-    // Nếu không có danh mục, mặc định gán danh mục hệ thống
+    // Nếu không có danh mục nào, gán mặc định danh mục hệ thống
     if (!category.length) {
       category = ["675dadfde9a2c0d93f9ba531"];
-    } else if (category.length > 1) {
-      for (let cat of category) {
-        const exist = await Category.findById(cat);
-        if (!exist) {
-          return res.status(400).json({ message: "Danh mục không tồn tại" });
-        }
+    }
+
+    // Kiểm tra tất cả category có tồn tại trong database không
+    for (const catId of category) {
+      const exists = await Category.findById(catId);
+      if (!exists) {
+        return res
+          .status(400)
+          .json({ message: `Danh mục ${catId} không tồn tại` });
       }
     }
 
+    // Khởi tạo biến lưu dữ liệu tạm tính
     const variantsId = [];
-    let priceFinal = Infinity;
-    let priceSaleFinal = Infinity;
-    let count = 0;
-    let totalOriginalPrice = 0;
+    let finalPrice = Infinity; // dùng để tìm giá nhỏ nhất
+    let finalPriceSale = Infinity; // dùng để tìm giá sale nhỏ nhất khác 0
+    let totalStock = 0; // tổng số lượng tồn kho
+    let totalOriginalPrice = 0; // tổng giá gốc của các biến thể
 
-    for (let v of variants) {
+    // Duyệt qua từng biến thể và xử lý
+    for (const v of variants) {
+      // Chuyển đổi danh sách giá trị thuộc tính thành mảng chỉ gồm _id
       const values = v.values.map((obj) => Object.values(obj)[0]);
 
-      count += v.countOnStock;
+      // Cộng dồn số lượng tồn kho và tổng giá gốc
+      totalStock += v.countOnStock;
       totalOriginalPrice += v.originalPrice * v.countOnStock;
 
-      if (v.price < priceFinal) priceFinal = v.price;
-      if (v.priceSale < priceSaleFinal && v.priceSale !== 0)
-        priceSaleFinal = v.priceSale;
+      // Tìm giá và giá sale nhỏ nhất trong các biến thể
+      if (v.price < finalPrice) finalPrice = v.price;
+      if (v.priceSale !== 0 && v.priceSale < finalPriceSale) {
+        finalPriceSale = v.priceSale;
+      }
 
+      // Tạo variant và lưu vào database
       const variant = await new Variant({
         price: v.price,
         priceSale: v.priceSale,
-        values,
+        values, //Id của các giá trị thuộc tính
         originalPrice: v.originalPrice,
         countOnStock: v.countOnStock,
         image: v.image,
       }).save();
 
+      // Lưu _id variant để liên kết với sản phẩm chính
       variantsId.push(variant._id);
     }
 
+    // Tạo sản phẩm chính sau khi đã xử lý xong các biến thể
     const product = await new Product({
       name,
       slug,
       image,
-      price: priceFinal,
-      priceSale: priceSaleFinal,
-      totalOriginalPrice,
-      countOnStock: count,
+      price: finalPrice, // giá thấp nhất trong các biến thể
+      priceSale: finalPriceSale !== Infinity ? finalPriceSale : 0, // giá sale thấp nhất khác 0
+      totalOriginalPrice, // tổng giá gốc của các biến thể
+      countOnStock: totalStock, // tổng số lượng tồn kho
       category,
       description,
       descriptionDetail,
-      variants: variantsId,
+      variants: variantsId, // lưu mảng _id của các variant
     }).save();
 
+    // Phản hồi thành công
     return res.status(201).json({
       message: "Tạo sản phẩm thành công",
       data: product,
     });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    // Bắt lỗi và phản hồi với mã lỗi 500
+    console.error("Lỗi tạo sản phẩm:", error);
+    return res.status(500).json({ message: error.message || "Lỗi server" });
   }
 };
 
+/**
+ * Cập nhật sản phẩm theo ID, xử lý biến thể:
+ * - Nếu biến thể có _id → cập nhật
+ * - Nếu không có _id → tạo mới
+ */
 export const updateProduct = async (req, res) => {
   try {
     let {
@@ -390,51 +410,77 @@ export const updateProduct = async (req, res) => {
 
     const slug = slugify(name, "-");
 
+    // Gán danh mục mặc định nếu không có hoặc loại bỏ nếu có nhiều
     if (!category.length) {
       category = ["675dadfde9a2c0d93f9ba531"];
-    } else {
-      // Loại bỏ danh mục mặc định nếu có > 1 danh mục
-      if (category.length > 1) {
-        category = category.filter((cat) => cat !== "675dadfde9a2c0d93f9ba531");
-      }
+    } else if (category.length > 1) {
+      category = category.filter((cat) => cat !== "675dadfde9a2c0d93f9ba531");
     }
 
     const existingProduct = await Product.findById(req.params.id);
+    if (!existingProduct) {
+      return res.status(404).json({ message: "Sản phẩm không tồn tại" });
+    }
 
     const variantsId = [];
-    let priceFinal = -Infinity;
+    let priceFinal = Infinity;
     let priceSaleFinal = Infinity;
     let count = 0;
     let totalOriginalPrice = 0;
 
-    for (let v of variants) {
+    // Duyệt từng biến thể
+    for (const v of variants) {
       const values = v.values.map((obj) => Object.values(obj)[0]);
 
       count += v.countOnStock;
       totalOriginalPrice += v.originalPrice * v.countOnStock;
 
-      if (v.price > priceFinal) priceFinal = v.price;
-      if (v.priceSale < priceSaleFinal && v.priceSale !== 0)
+      if (v.price < priceFinal) priceFinal = v.price;
+      if (v.priceSale < priceSaleFinal && v.priceSale !== 0) {
         priceSaleFinal = v.priceSale;
+      }
 
-      const variant = await new Variant({
-        price: v.price,
-        priceSale: v.priceSale,
-        originalPrice: v.originalPrice,
-        values,
-        countOnStock: v.countOnStock,
-        image: v.image,
-      }).save();
+      let variant;
+
+      // Nếu có _id thì cập nhật biến thể cũ
+      if (v._id) {
+        variant = await Variant.findByIdAndUpdate(
+          v._id,
+          {
+            price: v.price,
+            priceSale: v.priceSale,
+            originalPrice: v.originalPrice,
+            values,
+            countOnStock: v.countOnStock,
+            image: v.image,
+            deleted: false, // Bỏ ẩn nếu trước đó đã bị ẩn
+          },
+          { new: true }
+        );
+      } else {
+        // Nếu không có _id thì tạo biến thể mới
+        variant = await new Variant({
+          price: v.price,
+          priceSale: v.priceSale,
+          originalPrice: v.originalPrice,
+          values,
+          countOnStock: v.countOnStock,
+          image: v.image,
+        }).save();
+      }
 
       variantsId.push(variant._id);
     }
 
-    // Ẩn các variant cũ nếu không còn tồn tại trong variants mới
-    const newIds = new Set(variantsId.map((id) => id.toString()));
-    existingProduct.variants.forEach((v) => {
-      if (!newIds.has(v.toString())) hiddenVariant(v);
-    });
+    // Ẩn các biến thể cũ không còn được dùng
+    const newIdSet = new Set(variantsId.map((id) => id.toString()));
+    for (const oldVariantId of existingProduct.variants) {
+      if (!newIdSet.has(oldVariantId.toString())) {
+        await Variant.findByIdAndUpdate(oldVariantId, { deleted: true });
+      }
+    }
 
+    // Cập nhật sản phẩm
     const updatedProduct = await Product.findByIdAndUpdate(
       req.params.id,
       {
@@ -442,7 +488,7 @@ export const updateProduct = async (req, res) => {
         slug,
         image,
         price: priceFinal,
-        priceSale: priceSaleFinal,
+        priceSale: priceSaleFinal !== Infinity ? priceSaleFinal : 0,
         totalOriginalPrice,
         countOnStock: count,
         category,
@@ -458,6 +504,7 @@ export const updateProduct = async (req, res) => {
       dataRes: updatedProduct,
     });
   } catch (error) {
+    console.error("Lỗi cập nhật sản phẩm:", error);
     return res.status(500).json({ message: error.message });
   }
 };
@@ -540,6 +587,7 @@ export const getListRelatedProducts = async (req, res) => {
 
     const bestFavoriteProducts = await Product.aggregate([
       {
+        // Tìm các bình luận liên quan đến sản phẩm
         $lookup: {
           from: "comments",
           localField: "_id",
@@ -547,6 +595,7 @@ export const getListRelatedProducts = async (req, res) => {
           as: "comments",
         },
       },
+      // Lọc các bình luận không bị xóa
       {
         $addFields: {
           validComments: {
@@ -558,6 +607,7 @@ export const getListRelatedProducts = async (req, res) => {
           },
         },
       },
+      // Tính toán số lượng bình luận và đánh giá trung bình
       {
         $addFields: {
           reviewCount: { $size: "$validComments" },
@@ -570,6 +620,7 @@ export const getListRelatedProducts = async (req, res) => {
           },
         },
       },
+      // Tính toán đánh giá có trọng số (Theo công thức Bayesian average)
       {
         $addFields: {
           weightedRating: {
@@ -606,6 +657,7 @@ export const getListRelatedProducts = async (req, res) => {
           },
         },
       },
+      // Loại bỏ sản phẩm hiện tại, chỉ lấy sản phẩm chưa bị xóa và có weightedRating hợp lệ
       {
         $match: {
           _id: { $ne: productId },
@@ -613,8 +665,10 @@ export const getListRelatedProducts = async (req, res) => {
           weightedRating: { $ne: null },
         },
       },
+      // Sắp xếp theo weightedRating giảm dần, giới hạn kết quả
       { $sort: { weightedRating: -1 } },
       { $limit: 3 },
+      // Chọn các trường cần thiết để trả về
       {
         $project: {
           _id: 1,
@@ -656,22 +710,39 @@ const removeVietnameseTones = (str) => {
     .replace(/Đ/g, "D");
 };
 
+/**
+ * Gợi ý từ khóa tìm kiếm từ tên sản phẩm có chứa keyword người dùng nhập.
+ * - Dùng $regex để tìm sản phẩm có tên gần giống
+ * - Tách tên sản phẩm thành các cụm từ n-gram (1, 2, 3 từ)
+ * - Lọc những cụm từ chứa từ khóa (không dấu)
+ * - Trả về danh sách gợi ý không trùng nhau
+ */
 export const getSuggestedKeywords = async (req, res) => {
   try {
     const { keyword } = req.query;
 
+    // Nếu không có từ khóa đầu vào hoặc toàn dấu cách, trả về rỗng
     if (!keyword || keyword.trim() === "") {
       return res.status(400).json([]);
     }
 
+    // Chuẩn hóa từ khóa: bỏ dấu, đưa về lowercase để so khớp không dấu
     const keywordClean = removeVietnameseTones(keyword.toLowerCase());
 
+    // Tìm tối đa 50 sản phẩm có tên chứa từ khóa (không phân biệt hoa thường)
     const products = await Product.find({
       name: { $regex: keyword, $options: "i" },
     })
       .limit(50)
       .select("name");
 
+    /**
+     * Tách tên sản phẩm thành các cụm từ n-gram (tối đa 3 từ)
+     * VD: "Áo thun trắng form rộng" →
+     *  - 1-gram: "áo", "thun", "trắng", "form", "rộng"
+     *  - 2-gram: "áo thun", "thun trắng", ...
+     *  - 3-gram: "áo thun trắng", ...
+     */
     const extractNgrams = (text, maxN = 3) => {
       const words = text.toLowerCase().split(" ");
       const ngrams = [];
@@ -681,20 +752,26 @@ export const getSuggestedKeywords = async (req, res) => {
           ngrams.push(words.slice(i, i + n).join(" "));
         }
       }
+
       return ngrams;
     };
 
+    // Tạo mảng tất cả n-gram từ tất cả tên sản phẩm
     const allKeywords = products.flatMap((p) => extractNgrams(p.name));
+
+    // Lọc những cụm từ chứa từ khóa (dạng không dấu)
     const filtered = allKeywords
       .filter((k) => removeVietnameseTones(k).includes(keywordClean))
-      .filter((value, index, self) => self.indexOf(value) === index);
+      .filter((value, index, self) => self.indexOf(value) === index); // loại trùng
 
+    // Trả về 10 gợi ý đầu tiên
     return res.status(200).json(filtered.slice(0, 10));
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 };
 
+// Ẩn biến thể sản phẩm
 async function hiddenVariant(variantId) {
   await Variant.findOneAndUpdate({ _id: variantId }, { deleted: true });
 }
