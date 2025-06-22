@@ -90,8 +90,8 @@ export const ChatAI = async (req, res) => {
           )}</div>`
     }
     ${
-      description || detail
-        ? `<div class="text-xs text-gray-500 mt-1">${description} ${detail}</div>`
+      description
+        ? `<div class="text-xs text-gray-500 mt-1">${description}</div>`
         : ""
     }
   </div>

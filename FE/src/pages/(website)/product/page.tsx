@@ -50,7 +50,7 @@ const ProductDetail = () => {
         setIsGetting(true);
         /**
         1.	✅ Top 3 sản phẩm bán chạy nhất (dựa trên field count)
-        2.	✅ Top 3 sản phẩm được yêu thích nhất (dựa trên trung bình rating từ các bình luận không bị xoá)
+        2.	✅ Top 3 sản phẩm được yêu thích nhất (dựa trên trọng số trung bình rating từ các bình luận không bị xoá)
         3.	✅ Top 3 sản phẩm liên quan (cùng danh mục với sản phẩm đang xem)
          */
         const response = await axios.get(
@@ -84,7 +84,7 @@ const ProductDetail = () => {
       </div>
     );
   }
-
+  // console.log(data, "data");
   return (
     <div className="container mx-auto mb-10 px-4">
       {/* ====== PHẦN TRÊN: Breadcrumbs ====== */}

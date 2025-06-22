@@ -37,7 +37,7 @@ import sendOrderConfirmationEmail from "./sendEmail";
 import { useQueryClient } from "@tanstack/react-query";
 import io from "socket.io-client";
 import CheckOutCart from "./CheckOutCart";
-import { AiOutlineExclamationCircle } from 'react-icons/ai';
+import { AiOutlineExclamationCircle } from "react-icons/ai";
 import { Voucher } from "@/common/types/cart";
 import { Product, VariantValue } from "@/common/types/Products";
 const socket = io("http://localhost:3000");
@@ -81,21 +81,34 @@ const CheckOut = () => {
   const { cart: carts, isLoading: isLoadingCart, isError } = useCart(_id ?? "");
   const fullName = user?.fullName;
   const onSubmit = async (data: FormOut) => {
-
     if (carts?.voucher?.length > 0) {
       const voucherChecks = carts.voucher.map(async (item: Voucher) => {
-        const { data: voucherData } = await axios.get(`http://localhost:8080/api/voucher/get-one/${item._id}`);
+        const { data: voucherData } = await axios.get(
+          `http://localhost:8080/api/voucher/get-one/${item._id}`
+        );
 
-        if (voucherData?.status === 'inactive') {
-          throw new Error(`Voucher "${item.code}" đã ngưng hoạt động. Vui lòng chọn voucher khác hoặc gỡ bỏ voucher này`);
+        console.log("Voucher Data:", voucherData);
+        if (voucherData?.status === "inactive") {
+          throw new Error(
+            `Voucher "${item.code}" đã ngưng hoạt động. Vui lòng chọn voucher khác hoặc gỡ bỏ voucher này`
+          );
         }
 
-        if (new Date().getTime() >= new Date(new Date(voucherData?.endDate).getTime() - 7 * 60 * 60 * 1000).getTime()) {
-          throw new Error(`Voucher "${item.code}" đã hết hạn. Vui lòng chọn voucher khác hoặc gỡ bỏ voucher này.`);
+        if (
+          new Date().getTime() >=
+          new Date(
+            new Date(voucherData?.endDate).getTime() - 7 * 60 * 60 * 1000
+          ).getTime()
+        ) {
+          throw new Error(
+            `Voucher "${item.code}" đã hết hạn. Vui lòng chọn voucher khác hoặc gỡ bỏ voucher này.`
+          );
         }
 
         if (voucherData?.countOnStock === 0) {
-          throw new Error(`Voucher "${item.code}" đã hết số lượng. Vui lòng chọn voucher khác hoặc gỡ bỏ voucher này.`);
+          throw new Error(
+            `Voucher "${item.code}" đã hết số lượng. Vui lòng chọn voucher khác hoặc gỡ bỏ voucher này.`
+          );
         }
       });
 
@@ -218,16 +231,24 @@ const CheckOut = () => {
     }
   };
   if (adressError) {
-    return  <div className="flex items-center justify-center p-[10rem] my-10   ">
-    <AiOutlineExclamationCircle className="text-red-500 text-xl mr-2" />
-    <span className="text-red-600 font-semibold">Lỗi khi tải địa chỉ. Vui lòng thử lại sau.</span>
-  </div>;
+    return (
+      <div className="flex items-center justify-center p-[10rem] my-10   ">
+        <AiOutlineExclamationCircle className="text-red-500 text-xl mr-2" />
+        <span className="text-red-600 font-semibold">
+          Lỗi khi tải địa chỉ. Vui lòng thử lại sau.
+        </span>
+      </div>
+    );
   }
   if (isError) {
-    return <div className="flex items-center justify-center p-[10rem] my-10   ">
-    <AiOutlineExclamationCircle className="text-red-500 text-xl mr-2" />
-    <span className="text-red-600 font-semibold">Lỗi khi tải giỏ hàng. Vui lòng thử lại sau.</span>
-  </div>;
+    return (
+      <div className="flex items-center justify-center p-[10rem] my-10   ">
+        <AiOutlineExclamationCircle className="text-red-500 text-xl mr-2" />
+        <span className="text-red-600 font-semibold">
+          Lỗi khi tải giỏ hàng. Vui lòng thử lại sau.
+        </span>
+      </div>
+    );
   }
 
   const defaultAddress = addresses?.find(
@@ -405,7 +426,7 @@ const CheckOut = () => {
                                 <span>
                                   {formatCurrency(
                                     item.variantItem.priceSale ||
-                                    item.variantItem.price
+                                      item.variantItem.price
                                   )}{" "}
                                   VNĐ
                                 </span>
@@ -425,7 +446,7 @@ const CheckOut = () => {
                                     <div key={value._id}>
                                       {value.type}: {value.name}
                                       {index <
-                                        item.variantItem.values.length - 1
+                                      item.variantItem.values.length - 1
                                         ? ","
                                         : ""}
                                     </div>

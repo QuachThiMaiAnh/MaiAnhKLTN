@@ -4,32 +4,60 @@ import Variant from "../models/variant";
 import Category from "../models/category";
 
 export const getAllProducts = async (req, res) => {
-  // 1. Lấy các tham số lọc và phân trang từ query
   const {
-    _page = 1, // Trang hiện tại (mặc định là 1)
-    _limit = 9, // Số lượng sản phẩm trên mỗi trang (mặc định 9)
-    _sort = "createdAt", // Trường sắp xếp (mặc định theo ngày tạo)
-    _order = "desc", // Thứ tự sắp xếp: 'asc' hoặc 'desc'
-    _expand = true, // Có cần populate liên kết như category, variant không
-    _price, // Lọc theo khoảng giá (vd: "100000,300000")
-    _category, // Lọc theo ID danh mục (hoặc mảng)
-    _status = "display", // Trạng thái sản phẩm (display / hidden)
-    _search, // Tìm kiếm theo tên hoặc slug
-    _color, // Lọc theo giá trị màu sắc (ID thuộc tính)
+    _page = 1,
+    _limit = 9,
+    _sort = "createdAt",
+    _order = "desc",
+    _expand = true,
+    _price,
+    _category,
+    _status = "display",
+    _search,
+    _color,
   } = req.query;
 
-  // 2. Cấu hình phân trang và sắp xếp
+  const query = {};
+
+  // Lọc theo khoảng giá
+  if (_price) {
+    const [min, max] = _price.split(",").map(Number);
+    if (!isNaN(min)) query.price = { $gte: min };
+    if (!isNaN(max)) query.price = { ...(query.price || {}), $lte: max };
+  } else {
+    query.price = { $gte: 0 };
+  }
+
+  // Lọc theo danh mục
+  if (_category && _category !== "all") {
+    const categories =
+      typeof _category === "string" ? _category.split(",") : [];
+    query.category = { $in: categories };
+  }
+
+  // Trạng thái sản phẩm
+  query.deleted = _status === "hidden" ? true : false;
+
+  // Tìm kiếm theo tên hoặc slug
+  if (_search) {
+    query.$or = [
+      { name: { $regex: _search, $options: "i" } },
+      { slug: { $regex: _search, $options: "i" } },
+    ];
+  }
+
+  // ✅ Lấy toàn bộ để xử lý filter màu trước khi phân trang
   const options = {
-    page: +_page, // ép kiểu sang số
-    limit: +_limit,
-    sort: { [_sort]: _order === "desc" ? -1 : 1 }, // sort động theo field
+    page: 1, // ⚠️ bắt buộc để phân trang thủ công
+    limit: 10000,
+    sort: { [_sort]: _order === "desc" ? -1 : 1 },
     populate:
       _expand === "true" || _expand === true
         ? [
             {
               path: "category",
               select: "name deleted",
-              match: { deleted: false }, // chỉ lấy danh mục chưa bị ẩn
+              match: { deleted: false },
             },
             {
               path: "comments",
@@ -49,77 +77,35 @@ export const getAllProducts = async (req, res) => {
         : [],
   };
 
-  // 3. Tạo điều kiện lọc (query MongoDB)
-  const query = {};
-
-  // 3.1 Lọc theo khoảng giá (price)
-  if (_price) {
-    const [min, max] = _price.split(",").map(Number); // tách và ép số
-    if (!isNaN(min)) query.price = { $gte: min };
-    if (!isNaN(max)) query.price = { ...(query.price || {}), $lte: max };
-  } else {
-    query.price = { $gte: 0 }; // mặc định giá phải ≥ 0
-  }
-
-  // 3.2 Lọc theo danh mục
-  if (_category) {
-    const categories = Array.isArray(_category)
-      ? _category
-      : typeof _category === "string"
-      ? _category.split(",")
-      : [];
-    query.category = { $in: categories };
-  }
-
-  // 3.3 Lọc theo trạng thái sản phẩm (dùng soft-delete)
-  query.deleted = _status === "hidden" ? true : false;
-
-  // 3.4 Tìm kiếm theo từ khóa trong name hoặc slug
-  if (_search) {
-    query.$or = [
-      { name: { $regex: _search, $options: "i" } }, // không phân biệt hoa thường
-      { slug: { $regex: _search, $options: "i" } },
-    ];
-  }
-
   try {
-    // 4. Truy vấn cơ sở dữ liệu với paginate + query
     const result = await Product.paginate(query, options);
-    let docs = result.docs;
+    let filteredDocs = result.docs;
 
-    // 5.1 Nếu lọc danh mục mặc định (chỉ còn 1 danh mục là mặc định)
-    if (_category === "675dadfde9a2c0d93f9ba531") {
-      docs = docs.filter((product) => {
-        const activeCategories = product.category.filter((c) => !c.deleted);
-        return (
-          product.category.length === 1 &&
-          activeCategories.some(
-            (c) => c._id.toString() === "675dadfde9a2c0d93f9ba531"
-          )
-        );
-      });
-    }
-
-    // 5.2 Nếu lọc theo giá trị màu sắc (attribute color)
-    if (_color) {
-      docs = docs.filter((product) =>
+    // ✅ Lọc màu (sử dụng _color là ID value trong variants.values)
+    if (_color && _color !== "all") {
+      filteredDocs = filteredDocs.filter((product) =>
         product.variants?.some((variant) =>
-          variant.values?.some((val) => val.toString() === _color)
+          variant.values?.some((val) => val._id?.toString() === _color)
         )
       );
     }
 
-    // 6. Trả kết quả về client
+    // ✅ Phân trang thủ công sau khi lọc màu
+    const totalItems = filteredDocs.length;
+    const page = +_page;
+    const limit = +_limit;
+    const startIndex = (page - 1) * limit;
+    const paginatedDocs = filteredDocs.slice(startIndex, startIndex + limit);
+
     return res.status(200).json({
-      data: docs,
+      data: paginatedDocs,
       pagination: {
-        currentPage: result.page,
-        totalPages: Math.ceil(docs.length / result.limit),
-        totalItems: docs.length,
+        currentPage: page,
+        totalPages: Math.ceil(totalItems / limit),
+        totalItems,
       },
     });
   } catch (error) {
-    // 7. Xử lý lỗi và trả về message
     return res.status(400).json({ message: error.message });
   }
 };

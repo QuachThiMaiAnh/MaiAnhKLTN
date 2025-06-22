@@ -145,12 +145,22 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
     product?.category.length >= 2 && exists
       ? product?.category.filter((category) => category._id !== targetId)
       : product?.category;
-   if (isError) return (
-        <div className="flex items-center justify-center p-[10rem] my-10   ">
-            <AiOutlineExclamationCircle className="text-red-500 text-xl mr-2" />
-            <span className="text-red-600 font-semibold">Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.</span>
-        </div>
+  if (isError)
+    return (
+      <div className="flex items-center justify-center p-[10rem] my-10   ">
+        <AiOutlineExclamationCircle className="text-red-500 text-xl mr-2" />
+        <span className="text-red-600 font-semibold">
+          Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.
+        </span>
+      </div>
     );
+
+  // console.log(categories, "categories");
+  // console.log(product, "product");
+  console.log(variantChoose, "variantChoose");
+  console.log(attributesChoose, "attributesChoose");
+  // console.log(selectedAttributes, "selectedAttributes");
+  // console.log(attributesProduct, "attributesProduct");
   return (
     <div>
       <div className="uppercase text-[#555] text-sm leading-5 flex gap-4 mb-2">
@@ -175,7 +185,9 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
           giá:{" "}
           <span className="text-red-700 font-semibold text-sm">
             {variantChoose ? (
-            variantChoose.priceSale !== undefined &&  variantChoose.priceSale > 0 && variantChoose.priceSale < variantChoose.price ? (
+              variantChoose.priceSale !== undefined &&
+              variantChoose.priceSale > 0 &&
+              variantChoose.priceSale < variantChoose.price ? (
                 <>
                   <span className=" text-xl">
                     {formatCurrency(variantChoose.priceSale ?? 0)} VNĐ

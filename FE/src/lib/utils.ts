@@ -210,8 +210,14 @@ export const checkForDuplicateVariants = (data: IProduct) => {
   return duplicateIndices; // Trả về mảng vị trí của các biến thể bị trùng
 };
 
-//
-
+// Lấy các thuộc tính từ variants
+// (2)[(Array(2), Array(2))];
+// 0
+// :
+// (2) ['Màu sắc', Array(3)]
+// 1
+// :
+// (2) ['Kích cỡ', Array(1)]
 export const extractAttributes = (variants: any) => {
   const attributes: any = {};
 
@@ -225,8 +231,6 @@ export const extractAttributes = (variants: any) => {
       attributes[type].add(`${value._id}:${value.value}`);
     });
   });
-
-  // console.log("attributesTT: ", attributes);
 
   // Chuyển đổi Set thành Array cho mỗi thuộc tính
   Object.keys(attributes).forEach((key) => {

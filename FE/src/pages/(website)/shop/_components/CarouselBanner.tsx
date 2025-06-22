@@ -17,7 +17,7 @@ const CarouselBanner = () => {
   // State lưu slide đang hiển thị (index hiện tại)
   const [current, setCurrent] = useState(0);
 
-  // Gọi API lấy dữ liệu slide khi component mount
+  // Gọi API lấy dữ liệu slide khi component mount (Lấy slide product)
   useEffect(() => {
     const fetchSlides = async () => {
       try {
@@ -61,7 +61,8 @@ const CarouselBanner = () => {
                 }}
               ></div>
 
-              {/* Nội dung slide (text + promotionText) */}
+              {/* Nội dung slide (text + promotionText)
+              Nội dung (text mô tả, tiêu đề, khuyến mãi) hiển thị ở bên trái hoặc phải tùy index. */}
               <div
                 className={`bg-[#2c2c2c] md:bg-transparent block uppercase text-center py-5 px-[15px] pb-16 md:absolute top-12 lg:top-16 ${
                   index % 2 !== 0 ? "right-10" : "left-10"
@@ -83,6 +84,7 @@ const CarouselBanner = () => {
       </CarouselContent>
 
       {/* Điều hướng slide dưới dạng chấm tròn */}
+      {/* Khi người dùng click vào một chấm, carousel sẽ trượt đến slide tương ứng. */}
       <div className="flex items-center mt-4 absolute bottom-[5%] left-1/2 translate-x-[-50%]">
         {Array.from({ length: slidesData.length }).map((_, index) => (
           <button
