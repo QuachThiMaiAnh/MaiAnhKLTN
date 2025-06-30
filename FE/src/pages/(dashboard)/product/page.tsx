@@ -5,7 +5,7 @@ import Header from "./_components/Header";
 import { useGetAllProduct } from "./actions/useGetAllProduct";
 
 const ProductPage = () => {
-  const { isLoading, listProduct } = useGetAllProduct();
+  const { isLoading, listProduct } = useGetAllProduct(); // Hook lấy danh sách sản phẩm
 
   if (isLoading) {
     return (
@@ -15,14 +15,13 @@ const ProductPage = () => {
     );
   }
 
-  // console.log(listProduct);
-
   return (
     // <Container>
     <div className="bg-white p-6">
       <Header />
 
       <div className="min-h-80 mt-5">
+        {/* Hiển thị bảng dữ liệu sản phẩm */}
         <DataTable columns={columnProducts} data={listProduct?.data} />
       </div>
     </div>

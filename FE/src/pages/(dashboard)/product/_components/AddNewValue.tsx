@@ -29,14 +29,12 @@ export function AddNewValue({
   );
 
   // State để lưu giá trị từ form
-  const [name, setName] = useState<string>("");
-  const [valueAttribute, setValueAttribute] = useState<string>("");
-
-  const [nameError, setNameError] = useState<boolean>(false);
+  const [name, setName] = useState<string>(""); // Tên giá trị thuộc tính
+  const [valueAttribute, setValueAttribute] = useState<string>(""); // Giá trị thuộc tính (có thể là màu sắc hoặc chữ)
+  const [nameError, setNameError] = useState<boolean>(false); // Lỗi khi tên giá trị thuộc tính không hợp lệ
   const [valueAttributeError, setValueAttributeError] =
-    useState<boolean>(false);
-
-  const [typeValue, setTypeValue] = useState<string>("text");
+    useState<boolean>(false); // Lỗi khi giá trị thuộc tính không hợp lệ
+  const [typeValue, setTypeValue] = useState<string>("text"); // Kiểu giá trị thuộc tính (mặc định là text, có thể chuyển sang color)
 
   // Xử lý khi submit form
   const handleSubmit = async () => {

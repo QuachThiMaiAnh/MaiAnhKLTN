@@ -32,8 +32,6 @@ export function useGetAllProduct() {
   const page = searchParams.get("page") ? +searchParams.get("page")! : 1;
   const limit = valueLimit ? +valueLimit : 9;
 
-  // Sort
-
   const {
     isLoading,
     data: listProduct,
@@ -53,7 +51,8 @@ export function useGetAllProduct() {
         page,
         limit,
         category: filterCategory,
-        price: filterPrice,
+        // ✅ fix truyền đúng định dạng "min,max"
+        price: filterPrice ? filterPrice.join(",") : "",
         search: valueSearch || "",
         color: filterColor || "",
       }),
@@ -61,3 +60,14 @@ export function useGetAllProduct() {
 
   return { isLoading, listProduct, error };
 }
+
+/**
+ * http://localhost:8080/api/products?_page=1&_limit=9&_category=675e9f7a0f4700f2ef23ecd7&_price=0,3000000&_search=&_color=
+ * {,…}
+data
+: 
+[{_id: "6762e7076b62be7e96f8f65b", name: "Áo Khoác Bò LV Thêu Đính Đá Màu bụi From rộng nam Nữ",…},…]
+pagination
+: 
+{currentPage: 1, totalPages: 1, totalItems: 6}
+ */

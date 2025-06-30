@@ -6,15 +6,18 @@ import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 
 const UpdateSlider = () => {
-  const { id } = useParams();
+  const { id } = useParams(); // Lấy ID từ URL
   const navigate = useNavigate();
-  const [currentImage, setCurrentImage] = useState<string | null>(null);
-  const [currentBgImage, setCurrentBgImage] = useState<string | null>(null);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [previewBgImage, setPreviewBgImage] = useState<string | null>(null);
-  const [error, setError] = useState("");
   const { toast } = useToast();
 
+  // ============ State cho ảnh và lỗi ============
+  const [currentImage, setCurrentImage] = useState<string | null>(null); // Ảnh chính hiện tại
+  const [currentBgImage, setCurrentBgImage] = useState<string | null>(null); // Ảnh nền hiện tại
+  const [previewImage, setPreviewImage] = useState<string | null>(null); // Preview ảnh chính mới
+  const [previewBgImage, setPreviewBgImage] = useState<string | null>(null); // Preview ảnh nền mới
+  const [error, setError] = useState("");
+
+  // ============ Khởi tạo form ============
   const {
     register,
     handleSubmit,
@@ -30,16 +33,17 @@ const UpdateSlider = () => {
     },
   });
 
+  // ============ Theo dõi các giá trị cần thiết ============
   const type = watch("type");
   const features = watch("features") || [];
   const imageFile = watch("image");
   const bgImageFile = watch("backgroundImage");
-  
+
   useEffect(() => {
-    document.title =  "Cập Nhật Slider" ;
+    document.title = "Cập Nhật Slider";
   }, [id]);
 
-  // Lấy dữ liệu từ server
+  // ============ Tải dữ liệu từ server ============
   useEffect(() => {
     if (!id) {
       setError("ID không tồn tại trong URL.");
@@ -64,6 +68,7 @@ const UpdateSlider = () => {
           backgroundImage,
         } = response.data;
 
+        // Gán dữ liệu vào form
         setValue("type", type);
         setValue("title", title);
         setValue("subtitle", subtitle || "");
@@ -82,7 +87,7 @@ const UpdateSlider = () => {
     fetchSlider();
   }, [id, setValue]);
 
-  // Xử lý xem trước ảnh
+  // ============ Tạo preview ảnh nếu người dùng chọn ảnh mới ============
   useEffect(() => {
     if (imageFile instanceof FileList && imageFile[0]) {
       const reader = new FileReader();
@@ -103,13 +108,14 @@ const UpdateSlider = () => {
     }
   }, [bgImageFile]);
 
-  // Xử lý cập nhật
+  // ============ Gửi dữ liệu cập nhật ============
   const onSubmit = async (data: FormValuesSlide) => {
     try {
       const formData = new FormData();
       formData.append("type", data.type);
       formData.append("title", data.title);
 
+      // Nếu là homepage: thêm subtitle, mô tả, tính năng, giá
       if (data.type === "homepage") {
         formData.append("subtitle", data.subtitle || "");
         formData.append("description", data.description || "");
@@ -117,18 +123,18 @@ const UpdateSlider = () => {
         formData.append("price", data.price?.toString() || "0");
       }
 
+      // Nếu là product: thêm text khuyến mãi
       if (data.type === "product") {
         formData.append("promotionText", data.promotionText || "");
         formData.append("textsale", data.textsale || "");
       }
 
-      if (data.image?.[0]) {
-        formData.append("image", data.image[0]);
-      }
-      if (data.backgroundImage?.[0]) {
+      // Nếu có ảnh mới → thêm vào formData
+      if (data.image?.[0]) formData.append("image", data.image[0]);
+      if (data.backgroundImage?.[0])
         formData.append("backgroundImage", data.backgroundImage[0]);
-      }
 
+      // Gửi request PUT
       await axios.put(`http://localhost:8080/api/sliders/${id}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -147,9 +153,8 @@ const UpdateSlider = () => {
     }
   };
 
-  const addFeature = () => {
-    setValue("features", [...features, ""]);
-  };
+  // ============ Xử lý tính năng động ============
+  const addFeature = () => setValue("features", [...features, ""]);
 
   const removeFeature = (index: number) => {
     setValue(
@@ -158,25 +163,29 @@ const UpdateSlider = () => {
     );
   };
 
+  // ============ Xóa ảnh preview ============
   const handleRemoveImage = (type: "image" | "backgroundImage") => {
     if (type === "image") {
       setPreviewImage(null);
-      setValue("image", null); // Xóa giá trị ảnh chính
-    } else if (type === "backgroundImage") {
+      setValue("image", null);
+    } else {
       setPreviewBgImage(null);
-      setValue("backgroundImage", null); // Xóa giá trị ảnh nền
+      setValue("backgroundImage", null);
     }
   };
 
-
+  // ============ Giao diện form ============
   return (
     <div className="px-10 md:px-20 mx-auto p-4 sm:p-6">
       <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-gray-800 text-center">
         Cập Nhật Slider
       </h2>
+
+      {/* Hiển thị lỗi nếu có */}
       {error && <p className="text-red-500">{error}</p>}
+
       <form onSubmit={handleSubmit(onSubmit)} encType="multipart/form-data">
-        {/* Loại Slide */}
+        {/* ==== Chọn loại slide ==== */}
         <div className="mb-4">
           <label
             htmlFor="type"
@@ -200,7 +209,7 @@ const UpdateSlider = () => {
           )}
         </div>
 
-        {/* Tiêu Đề */}
+        {/* ==== Tiêu đề ==== */}
         <div className="mb-4">
           <label
             htmlFor="title"
@@ -220,7 +229,7 @@ const UpdateSlider = () => {
           )}
         </div>
 
-        {/* Homepage Fields */}
+        {/* ==== Các trường nếu là homepage ==== */}
         {type === "homepage" && (
           <>
             <div className="mb-4">
@@ -258,12 +267,14 @@ const UpdateSlider = () => {
                 Giá
               </label>
               <input
-                id="price"
                 type="number"
+                id="price"
                 {...register("price")}
                 className="mt-2 p-2 w-full border border-gray-300 rounded-lg"
               />
             </div>
+
+            {/* Tính năng */}
             <div className="mb-4">
               <label className="block text-lg font-medium text-gray-700">
                 Tính Năng
@@ -300,7 +311,7 @@ const UpdateSlider = () => {
           </>
         )}
 
-        {/* Product Fields */}
+        {/* ==== Các trường nếu là product ==== */}
         {type === "product" && (
           <>
             <div className="mb-4">
@@ -332,98 +343,27 @@ const UpdateSlider = () => {
           </>
         )}
 
+        {/* ==== Ảnh chính và ảnh nền ==== */}
         <div className="flex flex-col xl:flex-row gap-10 mt-20 justify-around">
-          {/* Ảnh Chính */}
-          <div className="mb-4">
-            <div className="flex flex-col lg:flex-row lg:items-center">
-              <label
-                htmlFor="image"
-                className="block w-32 text-lg font-medium text-gray-700"
-              >
-                Ảnh Chính:
-              </label>
-              <input
-                type="file"
-                {...register("image")}
-                className=" block w-full border border-gray-300 rounded-lg"
-              />
-            </div>
-            {currentImage && (
-              <div className="mt-2">
-                <p className="text-gray-700">Ảnh Hiện Tại:</p>
-                <img
-                  src={currentImage}
-                  alt="Current Image"
-                  className="md:w-[500px] w-[250px] h-[200px] md:h-[250px] max-w-md mx-auto object-contain rounded-lg shadow-md"
-                />
-              </div>
-            )}
-            {previewImage && (
-              <div className="mt-2 relative">
-                <p className="text-gray-700">Ảnh đã chọn:</p>
-                <img
-                  src={previewImage}
-                  alt="Preview"
-                  className="md:w-[500px] w-[250px] h-[200px] md:h-[250px] max-w-md mx-auto object-contain rounded-lg shadow-md"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleRemoveImage("image")}
-                  className="absolute top-6 flex items-center justify-center right-0 size-5 bg-red-500 text-white p-3 rounded"
-                >
-                  X
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Ảnh Nền */}
-          <div className="mb-4">
-            <div className="flex flex-col lg:flex-row lg:items-center">
-              <label
-                htmlFor="backgroundImage"
-                className="block w-32 text-lg font-medium text-gray-700"
-              >
-                Ảnh Nền:
-              </label>
-
-              <input
-                type="file"
-                {...register("backgroundImage")}
-                className="block w-full border border-gray-300 rounded-lg"
-              />
-            </div>
-            {currentBgImage && (
-              <div className="mt-2">
-                <p className="text-gray-700">Ảnh Nền Hiện Tại:</p>
-                <img
-                  src={currentBgImage}
-                  alt="Current Background"
-                  className="md:w-[500px] w-[250px] h-[200px] md:h-[250px] max-w-md mx-auto object-contain rounded-lg shadow-md"
-                />
-              </div>
-            )}
-            {previewBgImage && (
-              <div className="mt-2 relative">
-                <p className="text-gray-700">Ảnh Nền đã chọn:</p>
-                <img
-                  src={previewBgImage}
-                  alt="Preview Background"
-                  className="md:w-[500px] w-[250px] h-[200px] md:h-[250px] max-w-md mx-auto object-contain rounded-lg shadow-md"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleRemoveImage("backgroundImage")}
-                  className="absolute top-6 flex items-center justify-center right-0 size-5 bg-red-500 text-white p-3 rounded"
-                >
-                  X
-                </button>
-              </div>
-            )}
-          </div>
+          {/* Ảnh chính */}
+          <ImageBlock
+            label="Ảnh Chính"
+            currentImage={currentImage}
+            previewImage={previewImage}
+            register={register("image")}
+            onRemove={() => handleRemoveImage("image")}
+          />
+          {/* Ảnh nền */}
+          <ImageBlock
+            label="Ảnh Nền"
+            currentImage={currentBgImage}
+            previewImage={previewBgImage}
+            register={register("backgroundImage")}
+            onRemove={() => handleRemoveImage("backgroundImage")}
+          />
         </div>
 
-        {/* Nút Cập Nhật */}
+        {/* Nút submit */}
         <button
           type="submit"
           disabled={isSubmitting}
@@ -435,5 +375,54 @@ const UpdateSlider = () => {
     </div>
   );
 };
+
+// ==== Component con xử lý hình ảnh (reusable cho ảnh chính & ảnh nền) ====
+const ImageBlock = ({
+  label,
+  currentImage,
+  previewImage,
+  register,
+  onRemove,
+}) => (
+  <div className="mb-4">
+    <div className="flex flex-col lg:flex-row lg:items-center">
+      <label className="block w-32 text-lg font-medium text-gray-700">
+        {label}:
+      </label>
+      <input
+        type="file"
+        {...register}
+        className="block w-full border border-gray-300 rounded-lg"
+      />
+    </div>
+    {currentImage && (
+      <div className="mt-2">
+        <p className="text-gray-700">Ảnh Hiện Tại:</p>
+        <img
+          src={currentImage}
+          alt="Current"
+          className="w-[250px] h-[200px] object-contain mx-auto rounded-lg shadow-md"
+        />
+      </div>
+    )}
+    {previewImage && (
+      <div className="mt-2 relative">
+        <p className="text-gray-700">Ảnh đã chọn:</p>
+        <img
+          src={previewImage}
+          alt="Preview"
+          className="w-[250px] h-[200px] object-contain mx-auto rounded-lg shadow-md"
+        />
+        <button
+          type="button"
+          onClick={onRemove}
+          className="absolute top-6 right-0 bg-red-500 text-white rounded px-2 py-1"
+        >
+          X
+        </button>
+      </div>
+    )}
+  </div>
+);
 
 export default UpdateSlider;

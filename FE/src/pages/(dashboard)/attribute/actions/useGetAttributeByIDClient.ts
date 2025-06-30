@@ -3,13 +3,13 @@ import { getAttributeByIDClient } from "./api";
 
 export function useGetAttributeByIDClient(id: string) {
   const {
-    isLoading: isLoadingAtribute,
-    data: atribute,
+    isLoading: isLoadingAttribute,
+    data: attribute,
     error,
   } = useQuery({
-    queryKey: ["Attributes", id],
-    queryFn: () => getAttributeByIDClient(id),
+    queryKey: ["AttributeClient", id], // Dùng chung key với admin để tái sử dụng cache
+    queryFn: () => getAttributeByIDClient(id), // Gọi API lấy thuộc tính cho client (lọc giá trị đã xoá)
   });
 
-  return { isLoadingAtribute, atribute, error };
+  return { isLoadingAttribute, attribute, error };
 }

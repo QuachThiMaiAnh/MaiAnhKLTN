@@ -1,15 +1,18 @@
-import { Blog } from "@/common/types/Blog";
-import { useToast } from "@/components/ui/use-toast";
-import { uploadFile } from "@/lib/upload";
+// Import các thư viện và component cần thiết
+import { Blog } from "@/common/types/Blog"; // Kiểu dữ liệu cho bài viết
+import { useToast } from "@/components/ui/use-toast"; // Hook hiển thị thông báo toast
+import { uploadFile } from "@/lib/upload"; // Hàm upload ảnh (ví dụ Cloudinary)
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
-import { useNavigate, useParams } from "react-router-dom";
+import { useForm } from "react-hook-form"; // Quản lý form hiệu quả
+import ReactQuill from "react-quill"; // Editor hỗ trợ định dạng văn bản
+import "react-quill/dist/quill.snow.css"; // Giao diện cho ReactQuill
+import { useNavigate, useParams } from "react-router-dom"; // Đọc URL param và điều hướng
 
 const EditBlog = () => {
-  const { id } = useParams<{ id: string }>(); // Lấy ID từ URL
+  const { id } = useParams<{ id: string }>(); // Lấy `id` bài viết từ URL
+
+  // Khởi tạo form với react-hook-form
   const {
     handleSubmit,
     register,
@@ -17,33 +20,39 @@ const EditBlog = () => {
     watch,
     formState: { errors },
   } = useForm<Blog>();
+
+  // State quản lý: danh mục, nội dung editor, ảnh xem trước, file ảnh mới, trạng thái loading
   const [categories, setCategories] = useState<any[]>([]);
-  const [value, setValueEditor] = useState(""); // Lưu giá trị editor của React Quill
-  const [previewImage, setPreviewImage] = useState<string | null>(null); // Lưu ảnh xem trước
-  const [imageFile, setImageFile] = useState<File | null>(null); // Lưu file ảnh
+  const [value, setValueEditor] = useState(""); // Nội dung trong ReactQuill
+  const [previewImage, setPreviewImage] = useState<string | null>(null); // Ảnh hiện tại
+  const [imageFile, setImageFile] = useState<File | null>(null); // File ảnh mới nếu có
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const categoryValue = watch("category");
+  const categoryValue = watch("category"); // Theo dõi giá trị danh mục hiện tại
 
+  // Cập nhật tiêu đề tab trình duyệt
   useEffect(() => {
-     document.title = "Cập Nhật Bài Viết";
+    document.title = "Cập Nhật Bài Viết";
   }, [id]);
 
+  // Gọi API lấy thông tin bài viết và danh mục khi mở trang
   useEffect(() => {
     const fetchBlog = async () => {
       try {
-        const blogRes = await axios.get(`http://localhost:8080/api/blogs/${id}`);
+        const blogRes = await axios.get(
+          `http://localhost:8080/api/blogs/${id}`
+        );
         const blog = blogRes.data;
-  
-        // Hiển thị dữ liệu blog trước
+
+        // Gán dữ liệu bài viết vào form và editor
         setValue("title", blog.title);
         setValue("category", blog.category);
         setValue("author", blog.author);
         setValue("description", blog.description);
         setValue("content", blog.content);
-        setPreviewImage(blog.image);
-        setValueEditor(blog.content);
+        setPreviewImage(blog.image); // Hiển thị ảnh cũ
+        setValueEditor(blog.content); // Hiển thị nội dung cũ trong editor
       } catch (error) {
         console.error("Lỗi khi lấy thông tin bài viết:", error);
         toast({
@@ -53,10 +62,12 @@ const EditBlog = () => {
         });
       }
     };
-  
+
     const fetchCategories = async () => {
       try {
-        const categoriesRes = await axios.get("http://localhost:8080/api/category");
+        const categoriesRes = await axios.get(
+          "http://localhost:8080/api/category"
+        );
         setCategories(categoriesRes.data);
       } catch (error) {
         console.error("Lỗi khi lấy danh mục:", error);
@@ -67,42 +78,42 @@ const EditBlog = () => {
         });
       }
     };
-  
-    // Gọi API cho blog trước
-    fetchBlog();
-    fetchCategories();
-  }, [id, setValue, toast]);
-  
 
-  // Hàm xử lý thay đổi nội dung của React Quill
+    fetchBlog(); // Lấy thông tin bài viết cần sửa
+    fetchCategories(); // Lấy danh mục
+  }, [id, setValue, toast]);
+
+  // Cập nhật giá trị nội dung khi gõ trong ReactQuill
   const handleChange = (content: string) => {
-    setValueEditor(content); // Cập nhật giá trị cho editor
-    setValue("content", content); // Lưu vào React Hook Form
+    setValueEditor(content);
+    setValue("content", content);
   };
 
-  // Hàm xử lý khi chọn file ảnh
+  // Khi người dùng chọn ảnh mới → đọc base64 để xem trước
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setImageFile(file); // Lưu file vào state
+      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPreviewImage(reader.result as string); // Hiển thị ảnh xem trước
+        setPreviewImage(reader.result as string); // Hiển thị ảnh preview
       };
-      reader.readAsDataURL(file); // Đọc file dưới dạng base64
+      reader.readAsDataURL(file);
     }
   };
 
-  // Hàm xử lý submit form
+  // Gửi form khi nhấn nút "Cập nhật"
   const onSubmit = async (data: Blog) => {
+    // Nếu không có ảnh nào → báo lỗi
     if (!imageFile && !previewImage) {
       alert("Vui lòng chọn một ảnh!");
       return;
     }
 
-    setLoading(true);
+    setLoading(true); // Bật trạng thái loading
+
     try {
-      // Tạo FormData để gửi yêu cầu PUT
+      // Tạo FormData để gửi dữ liệu bài viết
       const formData = new FormData();
       formData.append("title", data.title);
       formData.append("category", data.category);
@@ -110,26 +121,25 @@ const EditBlog = () => {
       formData.append("description", data.description);
       formData.append("content", data.content);
 
-      // Nếu có ảnh mới, upload lên Cloudinary và thêm URL vào formData
+      // Nếu có ảnh mới → upload lên cloud và dùng ảnh mới
       if (imageFile) {
         const uploadedImageUrl = await uploadFile(imageFile);
         formData.append("image", uploadedImageUrl);
       } else if (previewImage) {
-        formData.append("image", previewImage); // Sử dụng ảnh đã có sẵn từ backend
+        formData.append("image", previewImage); // Giữ ảnh cũ
       }
 
-      // Gửi yêu cầu PUT lên BE
+      // Gửi PUT request cập nhật blog
       const response = await axios.put(
         `http://localhost:8080/api/blogs/${id}`,
         formData
       );
 
-      console.log("Bài viết đã được cập nhật:", response.data);
       toast({
         className: "bg-green-400 text-white h-auto",
         title: "Bài viết đã được cập nhật thành công!",
       });
-      navigate("/admin/blogs"); // Quay lại trang danh sách
+      navigate("/admin/blogs"); // Quay lại trang danh sách blog
     } catch (error) {
       console.error("Lỗi khi cập nhật bài viết:", error);
       toast({
@@ -203,22 +213,16 @@ const EditBlog = () => {
           )}
         </div>
 
-        {/* Tác giả */}
+        {/* Tác giả (ẩn) */}
         <div className="hidden">
-          <label htmlFor="author" className="block text-lg font-medium mb-2">
-            Tác giả
-          </label>
           <input
             {...register("author", { required: "Tác giả là bắt buộc" })}
             id="author"
             className="w-full p-2 border border-gray-300 rounded-md"
           />
-          {errors.author && (
-            <span className="text-red-500">{errors.author.message}</span>
-          )}
         </div>
 
-        {/* Hình ảnh */}
+        {/* Ảnh */}
         <div>
           <label htmlFor="image" className="block text-lg font-medium mb-2">
             Chọn ảnh
@@ -230,8 +234,7 @@ const EditBlog = () => {
             onChange={handleImageChange}
             className="w-full p-2 border border-gray-300 rounded-md"
           />
-
-          {/* Hiển thị ảnh xem trước */}
+          {/* Ảnh xem trước */}
           {previewImage && (
             <div className="mt-4">
               <img
@@ -261,15 +264,15 @@ const EditBlog = () => {
           )}
         </div>
 
-        {/* Nội dung (React Quill Editor) */}
+        {/* Nội dung */}
         <div>
           <label htmlFor="content" className="block text-lg font-medium mb-2">
             Nội dung
           </label>
           <ReactQuill
             theme="snow"
-            value={value} // Giá trị nội dung được truyền vào ReactQuill
-            onChange={handleChange} // Xử lý thay đổi nội dung
+            value={value}
+            onChange={handleChange}
             modules={{
               toolbar: [
                 [{ header: "1" }, { header: "2" }],
@@ -298,12 +301,12 @@ const EditBlog = () => {
           )}
         </div>
 
-        {/* Nút Submit */}
+        {/* Nút cập nhật */}
         <div>
           <button
             type="submit"
             className={`w-full px-4 py-2 text-white bg-blue-500 rounded-md ${
-              loading && "opacity-50 cursor-not-allowed"
+              loading ? "opacity-50 cursor-not-allowed" : ""
             }`}
             disabled={loading}
           >

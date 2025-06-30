@@ -13,10 +13,9 @@ dotenv.config();
 // ➤ Đồng bộ người dùng từ Clerk về MongoDB
 export const saveUser = async (req, res) => {
   try {
-    const { clerkId, phone, gender, birthdate, address, paymentInfo, orders } =
-      req.body;
+    const { clerkId, phone, gender, birthdate } = req.body;
 
-    // Kiểm tra dữ liệu đầu vào
+    // Bắt buộc phải có Clerk ID
     if (!clerkId) {
       return res
         .status(400)
@@ -25,79 +24,67 @@ export const saveUser = async (req, res) => {
 
     // Lấy thông tin người dùng từ Clerk
     const clerkUser = await clerkClient.users.getUser(clerkId);
+    const isDeletedOnClerk = clerkUser.privateMetadata?.isDeleted ?? false;
 
-    // Kiểm tra trạng thái xóa trên Clerk
-    const isDeletedOnClerk = clerkUser.privateMetadata?.isDeleted || false;
-
+    // Nếu tài khoản đã bị đánh dấu là "xóa" trong Clerk → từ chối tiếp tục
     if (isDeletedOnClerk) {
       return res.status(403).json({
         message:
-          "Người dùng đã bị xóa . Vui lòng khôi phục tài khoản trước khi thực hiện thao tác này.",
+          "Người dùng đã bị xóa. Vui lòng khôi phục tài khoản trước khi thực hiện thao tác này.",
       });
     }
 
-    // Kiểm tra trạng thái bị ban
-    const isBanned = clerkUser.privateMetadata?.isBanned || false;
+    // Kiểm tra trạng thái bị khóa
+    const isBanned = clerkUser.privateMetadata?.isBanned ?? false;
 
-    // Tìm người dùng trong cơ sở dữ liệu
+    // Kiểm tra nếu đã tồn tại trong MongoDB
     const existingUser = await Users.findOne({ clerkId });
 
-    // Xác định vai trò cho người dùng
-    const role = existingUser
-      ? existingUser.role
-      : clerkUser.publicMetadata?.role || (await Users.countDocuments()) === 0
-      ? "Admin"
-      : "User";
+    // Gán role: Admin nếu là người đầu tiên trong hệ thống
+    const role =
+      existingUser?.role ||
+      clerkUser.publicMetadata?.role ||
+      (await Users.countDocuments()) === 0
+        ? "Admin"
+        : "User";
 
-    // Cập nhật metadata trên Clerk
+    // Cập nhật metadata Clerk (cập nhật publicMetadata)
     await clerkClient.users.updateUser(clerkId, {
-      publicMetadata: {
-        role,
-        phone,
-        gender,
-        birthdate,
-      },
+      publicMetadata: { role, phone, gender, birthdate },
     });
 
-    // Xử lý ảnh người dùng (nếu có file hình ảnh được upload)
-    let imageUrl = clerkUser.imageUrl;
-
-    // Cập nhật hoặc tạo người dùng mới trong cơ sở dữ liệu
+    // Cập nhật hoặc tạo người dùng trong MongoDB
     const user = await Users.findOneAndUpdate(
       { clerkId },
       {
-        email: clerkUser.emailAddresses[0].emailAddress,
+        email: clerkUser.emailAddresses[0]?.emailAddress,
         firstName: clerkUser.firstName,
         lastName: clerkUser.lastName,
-        imageUrl,
+        imageUrl: clerkUser.imageUrl,
         role,
         phone,
         gender,
         birthdate,
-        address,
-        paymentInfo,
-        orders: orders || [],
         isBanned,
       },
-      { upsert: true, new: true }
+      { upsert: true, new: true } // Nếu người dùng chưa tồn tại thì tạo mới
     );
 
-    const conversation = await Conversation.findOne({ user: user._id });
-
-    if (!conversation && user.role === "User") {
-      await Conversation.create({
-        user: user._id,
-        admins: [],
-      });
+    // Tạo hội thoại riêng cho user mới nếu là "User"
+    if (user.role === "User") {
+      const hasConversation = await Conversation.exists({ user: user._id });
+      if (!hasConversation) {
+        await Conversation.create({ user: user._id, admins: [] });
+      }
     }
 
-    res.status(200).send({
+    return res.status(200).json({
       message: "Người dùng đã được lưu hoặc cập nhật thành công",
       user,
     });
   } catch (error) {
-    console.error("Lỗi khi lưu người dùng:", error);
-    res.status(500).send("Lỗi khi lưu người dùng: " + error.message);
+    console.error("❌ Lỗi khi lưu người dùng:", error);
+    return res.status(500).send("Lỗi khi lưu người dùng: " + error.message);
   }
 };
 
@@ -216,6 +203,8 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
+// Lấy về thông tin người dùng từ cả MongoDB + Clerk
+// Nhận vào clerkId từ params (id của người dùng trên Clerk)
 export const getUserById = async (req, res) => {
   try {
     const { clerkId } = req.params;

@@ -66,7 +66,7 @@ export const addToWishList = async (req, res) => {
       });
     }
 
-    //ktra sp trùng lặp trong giỏ hàng
+    //ktra sp trùng lặp
     const existProductIndex = wishList.products.findIndex(
       (item) =>
         // console.log("ITEM: ", item)

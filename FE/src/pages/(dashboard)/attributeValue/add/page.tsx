@@ -14,9 +14,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { z } from "zod";
 import { useEffect, useState } from "react";
-import { useGetAttributeByID } from "../../attribute/actions/useGetAttributeByID";
+import { useGetAtributes } from "../actions/useGetAllAttributeValues";
 import { useCreateAttributeValue } from "../actions/useCreateAttributeValue";
 
+// Định nghĩa schema kiểm tra dữ liệu đầu vào
 const formSchema = z.object({
   name: z.string().min(1, {
     message: "Hãy viết tên giá trị thuộc tính",
@@ -24,20 +25,17 @@ const formSchema = z.object({
   value: z.string().min(1, {
     message: "Hãy viết giá trị thuộc tính",
   }),
-
   type: z.string().min(1, {
-    message: "Hãy chọn loại giá trị thuộc tính",
+    message: "Thiếu loại thuộc tính",
   }),
 });
 
 const CreateAttributeValuePage = () => {
-  const { id } = useParams();
-  const [typeValue, setTypeValue] = useState<string>("text");
+  const { id } = useParams(); // Lấy id Thuộc tính cha từ URL
+  const [typeValue, setTypeValue] = useState<string>("text"); // Mặc định là kiểu text
+  const { isLoading: isLoadingAtribute, atributeValues } = useGetAtributes(id!); // Lấy danh sách giá trị thuộc tính theo thuộc tính cha
+  const { createAttributeValue, isCreating } = useCreateAttributeValue(id!); // Tạo giá trị thuộc tính mới
 
-  const { isLoadingAtribute, atribute } = useGetAttributeByID(id!);
-  const { createAttributeValue, isCreating } = useCreateAttributeValue(id!);
-
-  // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -47,18 +45,20 @@ const CreateAttributeValuePage = () => {
     },
   });
 
-  // 2. Define a submit handler.
+  // attributeValues là [attribute]
+
+  // Khi đổi typeValue hoặc thuộc tính được load, gán loại vào trường `type`
+  useEffect(() => {
+    if (atributeValues && atributeValues.length > 0) {
+      form.reset({ type: atributeValues[0].name }); // Gán loại thuộc tính đầu tiên
+    }
+  }, [atributeValues, form]);
+
+  if (isLoadingAtribute) return <div>Loading...</div>;
+
   function onSubmit(values: z.infer<typeof formSchema>) {
     createAttributeValue(values);
   }
-
-  useEffect(() => {
-    if (atribute) {
-      form.reset({ type: atribute.name });
-    }
-  }, [atribute, form]);
-
-  if (isLoadingAtribute) return <div>Loading...</div>;
 
   return (
     <Form {...form}>
@@ -66,6 +66,7 @@ const CreateAttributeValuePage = () => {
         onSubmit={form.handleSubmit(onSubmit)}
         className="space-y-8 w-2/3 ml-5"
       >
+        {/* Tên giá trị thuộc tính */}
         <FormField
           control={form.control}
           name="name"
@@ -73,55 +74,52 @@ const CreateAttributeValuePage = () => {
             <FormItem>
               <FormLabel>Tên giá trị thuộc tính</FormLabel>
               <FormControl>
-                <Input placeholder="shadcn" {...field} />
+                <Input placeholder="Ví dụ: Đỏ" {...field} />
               </FormControl>
-
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <div className="">
-          <FormField
-            control={form.control}
-            name="value"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Giá trị thuộc tính</FormLabel>
-                <FormControl>
-                  <Input type={typeValue} placeholder="shadcn" {...field} />
-                </FormControl>
-
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Button
-            type="button"
-            onClick={() => {
-              setTypeValue(typeValue === "text" ? "color" : "text");
-            }}
-          >
-            {typeValue === "text" ? "Đổi sang màu" : "Đổi sang chữ"}
-          </Button>
-        </div>
-        {/* <FormField
+        {/* Giá trị thực tế */}
+        <FormField
           control={form.control}
-          name="type"
+          name="value"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Loại giá trị thuộc tính</FormLabel>
+              <FormLabel>Giá trị thuộc tính</FormLabel>
               <FormControl>
-                <Input placeholder="shadcn" {...field} disabled />
+                <Input
+                  type={typeValue}
+                  placeholder={typeValue === "text" ? "Nhập chữ" : "Chọn màu"}
+                  {...field}
+                />
               </FormControl>
-
               <FormMessage />
             </FormItem>
           )}
-        /> */}
-        <Button disabled={isCreating} type="submit">
-          {isCreating ? "Đang tạo..." : "Tạo"}
-        </Button>
+        />
+
+        {/* Nút đổi kiểu hiển thị value */}
+        <div className="flex gap-4">
+          <Button
+            type="button"
+            onClick={() =>
+              setTypeValue((prev) => {
+                const next = prev === "text" ? "color" : "text";
+                form.setValue("type", next);
+                return next;
+              })
+            }
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            {typeValue === "text" ? "Đổi sang màu" : "Đổi sang chữ"}
+          </Button>
+
+          <Button disabled={isCreating} type="submit">
+            {isCreating ? "Đang tạo..." : "Tạo"}
+          </Button>
+        </div>
       </form>
     </Form>
   );

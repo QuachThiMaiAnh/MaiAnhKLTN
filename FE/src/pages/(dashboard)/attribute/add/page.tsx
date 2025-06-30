@@ -1,4 +1,4 @@
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@hookform/resolvers/zod"; // Thư viện để tích hợp zod với react-hook-form
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -12,32 +12,30 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useCreateAttribute } from "../actions/useCreateAttribute";
+import { useCreateAttribute } from "../actions/useCreateAttribute"; // Import hook tạo thuộc tính
 
+// Định nghĩa schema validate cho form
 const formSchema = z.object({
-  name: z
-    .string()
-    .min(1, {
-      message: "Hãy viết tên thuộc tính",
-    })
-    .max(50),
+  name: z.string().min(1, { message: "Hãy viết tên thuộc tính" }).max(50), // Tên thuộc tính tối thiểu 1 ký tự, tối đa 50 ký tự
 });
 
 const CreateAttributePage = () => {
-  const { createAttribute, isCreatting } = useCreateAttribute();
+  // Hook mutation gọi API tạo thuộc tính
+  const { createAttribute, isCreating } = useCreateAttribute();
 
-  // 1. Define your form.
+  // Khởi tạo form với react-hook-form + zod
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
+      name: "", // tên thuộc tính ban đầu rỗng
     },
   });
 
-  // 2. Define a submit handler.
+  // Hàm submit
   function onSubmit(values: z.infer<typeof formSchema>) {
-    createAttribute(values);
+    createAttribute(values); // Gửi request tạo mới
   }
+
   return (
     <Form {...form}>
       <form
@@ -53,13 +51,12 @@ const CreateAttributePage = () => {
               <FormControl>
                 <Input placeholder="shadcn" {...field} />
               </FormControl>
-
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button disabled={isCreatting} type="submit">
-          {isCreatting ? "Đang tạo..." : "Tạo mới"}
+        <Button disabled={isCreating} type="submit">
+          {isCreating ? "Đang tạo..." : "Tạo mới"}
         </Button>
       </form>
     </Form>

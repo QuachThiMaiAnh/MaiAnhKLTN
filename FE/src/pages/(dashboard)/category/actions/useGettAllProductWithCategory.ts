@@ -1,15 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { getAllProductWithCategory } from "./api";
 
-export function useGettAllProductWithCategory(id: string) {
+export function useGetAllProductWithCategory(id: string) {
   const {
-    isLoading: isGetting,
-    data: countProduct,
-    error: errorGetting,
+    isLoading,
+    data: productCount,
+    error,
   } = useQuery({
-    queryKey: ["CategoriesProduct", id],
-    queryFn: () => getAllProductWithCategory(id),
+    queryKey: ["CategoryProductCount", id],
+    queryFn: () => getAllProductWithCategory(id), // Gọi API để lấy số lượng sản phẩm theo danh mục
+    enabled: !!id, // Note: Tránh gọi API nếu ID chưa có
   });
 
-  return { isGetting, countProduct, errorGetting };
+  return { isLoading, productCount, error };
 }

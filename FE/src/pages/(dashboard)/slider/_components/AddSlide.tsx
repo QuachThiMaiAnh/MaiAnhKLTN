@@ -7,9 +7,11 @@ import { useNavigate, useParams } from "react-router-dom";
 
 const AddSlider = () => {
   const navigate = useNavigate();
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [bgImagePreview, setBgImagePreview] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null); // Preview ảnh chính
+  const [bgImagePreview, setBgImagePreview] = useState<string | null>(null); // Preview ảnh nền
   const { toast } = useToast();
+
+  // Khởi tạo form sử dụng react-hook-form
   const {
     register,
     handleSubmit,
@@ -18,39 +20,42 @@ const AddSlider = () => {
     formState: { errors, isSubmitting },
   } = useForm<FormValuesSlide>();
 
-  const type = watch("type"); // Theo dõi loại slide
-  const features = watch("features") || [];
-  const { id } = useParams();
-  
-    useEffect(() => {
-      if (!id) document.title = "Thêm Mới Slider";
-    }, [id]);
+  const type = watch("type"); // Theo dõi giá trị loại slide (homepage | product)
+  const features = watch("features") || []; // Theo dõi danh sách tính năng
+  const { id } = useParams(); // Nếu có ID trong params, có thể dùng để phân biệt create/edit
 
+  // Cập nhật tiêu đề tab khi không có ID (thêm mới)
+  useEffect(() => {
+    if (!id) document.title = "Thêm Mới Slider";
+  }, [id]);
+
+  // Submit form
   const onSubmit = async (data: FormValuesSlide) => {
-    console.log(data);
     const formData = new FormData();
     formData.append("type", data.type);
     formData.append("title", data.title);
 
-    // Nếu loại slide là homepage, thêm các trường liên quan
+    // Tùy loại slide sẽ có các trường riêng
     if (data.type === "homepage") {
       if (data.subtitle) formData.append("subtitle", data.subtitle);
       if (data.description) formData.append("description", data.description);
       if (data.features)
-        formData.append("features", JSON.stringify(data.features));
+        formData.append("features", JSON.stringify(data.features)); // Gửi JSON.stringify
       if (data.price) formData.append("price", data.price.toString());
     }
 
-     // Nếu loại slide là product, thêm các trường liên quan
     if (data.type === "product") {
       if (data.promotionText)
         formData.append("promotionText", data.promotionText);
       if (data.textsale) formData.append("textsale", data.textsale);
     }
-    
+
+    // Ảnh chính
     if (data.image instanceof FileList && data.image.length > 0) {
       formData.append("image", data.image[0]);
     }
+
+    // Ảnh nền
     if (data.backgroundImage && data.backgroundImage[0])
       formData.append("backgroundImage", data.backgroundImage[0]);
 
@@ -58,11 +63,13 @@ const AddSlider = () => {
       await axios.post("http://localhost:8080/api/sliders", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
+
       toast({
         className: "bg-green-400 text-white h-auto",
         title: "Slide đã được tạo thành công!",
       });
-      navigate("/admin/sliders");
+
+      navigate("/admin/sliders"); // Điều hướng về danh sách
     } catch (err) {
       toast({
         variant: "destructive",
@@ -72,13 +79,17 @@ const AddSlider = () => {
     }
   };
 
+  // Thêm mới dòng tính năng (cho type homepage)
   const addFeature = () => setValue("features", [...features, ""]);
+
+  // Xóa dòng tính năng
   const removeFeature = (index: number) =>
     setValue(
       "features",
       features.filter((_, i) => i !== index)
     );
 
+  // Xử lý khi chọn ảnh → tạo preview để hiển thị
   const handleImagePreview = (
     e: React.ChangeEvent<HTMLInputElement>,
     type: "image" | "backgroundImage"
@@ -97,27 +108,30 @@ const AddSlider = () => {
     }
   };
 
+  // Xóa ảnh đã chọn (preview + giá trị form)
   const handleRemoveImage = (type: "image" | "backgroundImage") => {
     if (type === "image") {
       setImagePreview(null);
-      setValue("image", null ); // Xóa giá trị ảnh chính
-    } else if (type === "backgroundImage") {
+      setValue("image", null);
+    } else {
       setBgImagePreview(null);
-      setValue("backgroundImage", null ); // Xóa giá trị ảnh nền
+      setValue("backgroundImage", null);
     }
   };
 
   return (
-    <div className="px-10 md:px-20 mx-auto p-4 sm:p-6 ">
+    <div className="px-10 md:px-20 mx-auto p-4 sm:p-6">
       <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-gray-800 text-center">
         Tạo Mới Slide
       </h2>
+
+      {/* Form khởi tạo slide */}
       <form onSubmit={handleSubmit(onSubmit)} encType="multipart/form-data">
-        {/* Loại Slide */}
+        {/* =============== Chọn loại slide =============== */}
         <div className="mb-4 sm:mb-6">
           <label
             htmlFor="type"
-            className="block text-gray-700 text-base sm:text-lg"
+            className="block text-base sm:text-lg text-gray-700"
           >
             Loại Slide
           </label>
@@ -137,15 +151,14 @@ const AddSlider = () => {
           )}
         </div>
 
-        {/* Tiêu Đề */}
-
-        {/* Các trường của Homepage */}
+        {/* =============== Loại HOMEPAGE =============== */}
         {type === "homepage" && (
           <>
+            {/* Tiêu đề */}
             <div className="mb-4 sm:mb-6">
               <label
                 htmlFor="title"
-                className="block text-gray-700 text-base sm:text-lg"
+                className="block text-base sm:text-lg text-gray-700"
               >
                 Tiêu Đề
               </label>
@@ -162,10 +175,12 @@ const AddSlider = () => {
                 </p>
               )}
             </div>
+
+            {/* Các trường phụ: subtitle, description, price */}
             <div className="mb-4 sm:mb-6">
               <label
                 htmlFor="subtitle"
-                className="block text-gray-700 text-base sm:text-lg"
+                className="block text-base sm:text-lg text-gray-700"
               >
                 Phụ Đề
               </label>
@@ -175,22 +190,25 @@ const AddSlider = () => {
                 className="mt-2 p-2 sm:p-3 w-full border border-gray-300 rounded-lg"
               />
             </div>
+
             <div className="mb-4 sm:mb-6">
               <label
                 htmlFor="description"
-                className="block text-gray-700 text-base sm:text-lg"
+                className="block text-base sm:text-lg text-gray-700"
               >
                 Mô Tả
               </label>
               <textarea
                 id="description"
                 {...register("description")}
-                className="mt-2 p-2 sm:p-3 w-full border border-gray-300 rounded-lg"
                 rows={4}
+                className="mt-2 p-2 sm:p-3 w-full border border-gray-300 rounded-lg"
               />
             </div>
+
+            {/* Tính năng (mảng) */}
             <div className="mb-4 sm:mb-6">
-              <label className="block text-gray-700 text-base sm:text-lg">
+              <label className="block text-base sm:text-lg text-gray-700">
                 Tính Năng
               </label>
               {features.map((feature, index) => (
@@ -199,9 +217,9 @@ const AddSlider = () => {
                     type="text"
                     value={feature}
                     onChange={(e) => {
-                      const updatedFeatures = [...features];
-                      updatedFeatures[index] = e.target.value;
-                      setValue("features", updatedFeatures);
+                      const updated = [...features];
+                      updated[index] = e.target.value;
+                      setValue("features", updated);
                     }}
                     className="p-2 sm:p-3 border border-gray-300 rounded-lg w-full"
                   />
@@ -222,10 +240,12 @@ const AddSlider = () => {
                 + Thêm Tính Năng
               </button>
             </div>
+
+            {/* Giá */}
             <div className="mb-4 sm:mb-6">
               <label
                 htmlFor="price"
-                className="block text-gray-700 text-base sm:text-lg"
+                className="block text-base sm:text-lg text-gray-700"
               >
                 Giá
               </label>
@@ -237,90 +257,25 @@ const AddSlider = () => {
               />
             </div>
 
-            <div className="flex flex-col xl:flex-row gap-10 lg:gap-20">
-              {/* Ảnh Chính */}
-              <div className="mb-4 sm:mb-6">
-                <div className="md:flex items-center gap-5 ">
-                  <label
-                    htmlFor="image"
-                    className="block text-gray-700 text-base sm:text-lg"
-                  >
-                    Ảnh Chính:
-                  </label>
-                  <input
-                    type="file"
-                    id="image"
-                    {...register("image")}
-                    onChange={(e) => handleImagePreview(e, "image")}
-                    className="max-w-full md:max-w-xs overflow-hidden text-ellipsis"
-                  />
-                </div>
-                {imagePreview && (
-                  <div className="mt-2 relative">
-                    <p className="text-gray-700">Ảnh đã chọn:</p>
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="md:w-[500px] w-[250px] h-[200px] md:h-[250px] max-w-md mx-auto object-contain rounded-lg shadow-md"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveImage("image")}
-                      className="absolute top-6 flex items-center justify-center right-0 size-5 bg-red-500 text-white p-3 rounded"
-                    >
-                      X
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Ảnh Nền */}
-              <div className="mb-4 sm:mb-6">
-                <div className="md:flex items-center gap-5">
-                  <label
-                    htmlFor="backgroundImage"
-                    className="block text-gray-700 text-base sm:text-lg"
-                  >
-                    Ảnh Nền:
-                  </label>
-                  <input
-                    type="file"
-                    id="backgroundImage"
-                    {...register("backgroundImage")}
-                    onChange={(e) => handleImagePreview(e, "backgroundImage")}
-                    className="max-w-full md:max-w-xs overflow-hidden text-ellipsis"
-                  />
-                </div>
-
-                {bgImagePreview && (
-                  <div className="mt-2 relative">
-                    <p className="text-gray-700">Ảnh Nền đã chọn:</p>
-                    <img
-                      src={bgImagePreview}
-                      alt="Background Preview"
-                      className="md:w-[500px] w-[250px] h-[200px] md:h-[250px] max-w-md mx-auto object-contain rounded-lg shadow-md"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveImage("backgroundImage")}
-                      className="absolute top-6 flex items-center justify-center right-0 size-5 bg-red-500 text-white p-3 rounded"
-                    >
-                      X
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Ảnh chính & nền */}
+            <ImageFields
+              imagePreview={imagePreview}
+              bgImagePreview={bgImagePreview}
+              register={register}
+              handleImagePreview={handleImagePreview}
+              handleRemoveImage={handleRemoveImage}
+            />
           </>
         )}
 
-        {/* Các trường của Product */}
+        {/* =============== Loại PRODUCT =============== */}
         {type === "product" && (
           <>
+            {/* Tiêu đề */}
             <div className="mb-4 sm:mb-6">
               <label
                 htmlFor="title"
-                className="block text-gray-700 text-base sm:text-lg"
+                className="block text-base sm:text-lg text-gray-700"
               >
                 Tiêu Đề
               </label>
@@ -337,10 +292,12 @@ const AddSlider = () => {
                 </p>
               )}
             </div>
+
+            {/* Text nổi bật và % giảm */}
             <div className="mb-4 sm:mb-6">
               <label
                 htmlFor="promotionText"
-                className="block text-gray-700 text-base sm:text-lg"
+                className="block text-base sm:text-lg text-gray-700"
               >
                 Text nổi bật Khuyến Mãi
               </label>
@@ -350,10 +307,11 @@ const AddSlider = () => {
                 className="mt-2 p-2 sm:p-3 w-full border border-gray-300 rounded-lg"
               />
             </div>
+
             <div className="mb-4 sm:mb-6">
               <label
                 htmlFor="textsale"
-                className="block text-gray-700 text-base sm:text-lg"
+                className="block text-base sm:text-lg text-gray-700"
               >
                 Text khuyến mãi bao nhiêu %
               </label>
@@ -364,87 +322,22 @@ const AddSlider = () => {
               />
             </div>
 
-            <div className="flex flex-col xl:flex-row gap-10 md:gap-32">
-              {/* Ảnh Chính */}
-              <div className="mb-4 sm:mb-6">
-                <div className="md:flex items-center gap-5 ">
-                  <label
-                    htmlFor="image"
-                    className="block text-gray-700 text-base sm:text-lg"
-                  >
-                    Ảnh Chính:
-                  </label>
-                  <input
-                    type="file"
-                    id="image"
-                    {...register("image")}
-                    onChange={(e) => handleImagePreview(e, "image")}
-                    className="max-w-full md:max-w-xs overflow-hidden text-ellipsis"
-                  />
-                </div>
-                {imagePreview && (
-                  <div className="mt-2 relative">
-                    <p className="text-gray-700">Ảnh đã chọn:</p>
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="md:w-[500px] w-[250px] h-[200px] md:h-[250px] max-w-md mx-auto object-contain rounded-lg shadow-md"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveImage("image")}
-                      className="absolute top-6 flex items-center justify-center right-0 size-5 bg-red-500 text-white p-3 rounded"
-                    >
-                      X
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Ảnh Nền */}
-              <div className="mb-4 sm:mb-6">
-                <div className="md:flex items-center gap-5">
-                  <label
-                    htmlFor="backgroundImage"
-                    className="block text-gray-700 text-base sm:text-lg"
-                  >
-                    Ảnh Nền:
-                  </label>
-                  <input
-                    type="file"
-                    id="backgroundImage"
-                    {...register("backgroundImage")}
-                    onChange={(e) => handleImagePreview(e, "backgroundImage")}
-                    className="max-w-full md:max-w-xs overflow-hidden text-ellipsis"
-                  />
-                </div>
-
-                {bgImagePreview && (
-                  <div className="mt-2 relative">
-                    <p className="text-gray-700">Ảnh Nền đã chọn:</p>
-                    <img
-                      src={bgImagePreview}
-                      alt="Background Preview"
-                      className="md:w-[500px] w-[250px] h-[200px] md:h-[250px] max-w-md mx-auto object-contain rounded-lg shadow-md"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveImage("backgroundImage")}
-                      className="absolute top-6 flex items-center justify-center right-0 size-5 bg-red-500 text-white p-3 rounded"
-                    >
-                      X
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Ảnh chính & nền */}
+            <ImageFields
+              imagePreview={imagePreview}
+              bgImagePreview={bgImagePreview}
+              register={register}
+              handleImagePreview={handleImagePreview}
+              handleRemoveImage={handleRemoveImage}
+            />
           </>
         )}
 
+        {/* Nút submit */}
         <button
           type="submit"
           disabled={isSubmitting}
-          className=" bg-blue-500 mt-6 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg shadow-lg hover:bg-blue-600 transition duration-300 ease-in-out "
+          className="bg-blue-500 mt-6 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-blue-600 transition"
         >
           {isSubmitting ? "Đang Tạo..." : "Tạo Slide"}
         </button>
@@ -452,5 +345,84 @@ const AddSlider = () => {
     </div>
   );
 };
+
+// =============== Component con xử lý ảnh ===============
+const ImageFields = ({
+  imagePreview,
+  bgImagePreview,
+  register,
+  handleImagePreview,
+  handleRemoveImage,
+}) => (
+  <div className="flex flex-col xl:flex-row gap-10 lg:gap-20">
+    {/* Ảnh chính */}
+    <div className="mb-4 sm:mb-6">
+      <div className="md:flex items-center gap-5">
+        <label
+          htmlFor="image"
+          className="block text-gray-700 text-base sm:text-lg"
+        >
+          Ảnh Chính:
+        </label>
+        <input
+          type="file"
+          id="image"
+          {...register("image")}
+          onChange={(e) => handleImagePreview(e, "image")}
+          className="max-w-full md:max-w-xs"
+        />
+      </div>
+      {imagePreview && (
+        <div className="mt-2 relative">
+          <img
+            src={imagePreview}
+            alt="Preview"
+            className="w-[250px] h-[200px] object-contain mx-auto rounded-lg shadow-md"
+          />
+          <button
+            onClick={() => handleRemoveImage("image")}
+            className="absolute top-6 right-0 bg-red-500 text-white rounded px-2 py-1"
+          >
+            X
+          </button>
+        </div>
+      )}
+    </div>
+
+    {/* Ảnh nền */}
+    <div className="mb-4 sm:mb-6">
+      <div className="md:flex items-center gap-5">
+        <label
+          htmlFor="backgroundImage"
+          className="block text-gray-700 text-base sm:text-lg"
+        >
+          Ảnh Nền:
+        </label>
+        <input
+          type="file"
+          id="backgroundImage"
+          {...register("backgroundImage")}
+          onChange={(e) => handleImagePreview(e, "backgroundImage")}
+          className="max-w-full md:max-w-xs"
+        />
+      </div>
+      {bgImagePreview && (
+        <div className="mt-2 relative">
+          <img
+            src={bgImagePreview}
+            alt="Background Preview"
+            className="w-[250px] h-[200px] object-contain mx-auto rounded-lg shadow-md"
+          />
+          <button
+            onClick={() => handleRemoveImage("backgroundImage")}
+            className="absolute top-6 right-0 bg-red-500 text-white rounded px-2 py-1"
+          >
+            X
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
+);
 
 export default AddSlider;

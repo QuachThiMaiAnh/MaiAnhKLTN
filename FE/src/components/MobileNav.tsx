@@ -28,17 +28,18 @@ const MobileNav = () => {
   }, [pathname]);
 
   return (
-    <div className="lg:hidden cursor-pointer max-w-[264px]">
+    <div className="lg:hidden cursor-pointer max-w-[264px] ">
       <Sheet>
         <SheetTrigger asChild>
           <div>
-            <RxHamburgerMenu className="text-3xl font-bold" />
+            {/* Icon ☰ */}
+            <RxHamburgerMenu className="text-3xl font-bold text-foreground" />
           </div>
         </SheetTrigger>
-        <SheetContent className="w-[300px] pt-3">
+        <SheetContent className="w-[300px] pt-3 bg-background text-foreground">
           <SheetHeader>
-            <SheetTitle className="border-b pb-4 uppercase font-black text-[#343434] leading-[30px] text-[18px] font-raleway text-left">
-              Menu
+            <SheetTitle className="border-b pb-4 uppercase font-black leading-[30px] text-[18px] font-raleway text-left text-foreground">
+              Thanh điều hướng
             </SheetTitle>
             <SheetDescription className="hidden"></SheetDescription>
             <SheetClose asChild></SheetClose>
@@ -47,16 +48,20 @@ const MobileNav = () => {
             <ul className="w-full">
               {menuItems.map((item, index) => (
                 <li key={index}>
-                  <Link
-                    to={item.to}
-                    className={`hover:text-[#b8cd06] text-xs font-bold leading-4 pt-3 pr-11 pb-[10px] pl-4 shadow-custom rounded-2xl w-full block mb-[10px] ${
-                      pathname === item.to
-                        ? "text-white bg-[#b8cd06]"
-                        : "text-[#343434]"
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
+                  {/* Click vào link sẽ điều hướng đến trang tương ứng và đóng sheet */}
+                  <SheetClose asChild>
+                    <Link
+                      to={item.to}
+                      className={`text-xs font-bold leading-4 pt-3 pr-11 pb-[10px] pl-4 rounded-2xl w-full block mb-[10px] shadow-custom transition-all
+            ${
+              pathname === item.to
+                ? "bg-primary text-primary-foreground"
+                : "text-foreground hover:text-primary"
+            }`}
+                    >
+                      {item.label}
+                    </Link>
+                  </SheetClose>
                 </li>
               ))}
             </ul>

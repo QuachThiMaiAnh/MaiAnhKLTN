@@ -1,80 +1,100 @@
-import { useEffect, useState } from "react";
-import { IoIosClose } from "react-icons/io";
-import { IoBagHandleSharp, IoSearch } from "react-icons/io5";
-import { SlHeart } from "react-icons/sl";
+import { useEffect, useState } from "react"; // Quản lý state và thực thi effect khi component render.
+import { IoIosClose } from "react-icons/io"; // Icon đóng
+import { IoBagHandleSharp, IoSearch } from "react-icons/io5"; // Icon giỏ hàng và tìm kiếm
+import { SlHeart } from "react-icons/sl"; // Icon yêu thích
 
-import MobileNav from "@/components/MobileNav";
+import MobileNav from "@/components/MobileNav"; // Thanh điều hướng di động
+import { useUserContext } from "@/common/context/UserProvider"; // Context người dùng để lấy thông tin người dùng hiện tại (_id, v.v.)
+import useCart from "@/common/hooks/useCart"; // Hook để lấy giỏ hàng của người dùng
+import { useToast } from "@/components/ui/use-toast"; // Hook để hiển thị thông báo (toast)
 
-import { useUserContext } from "@/common/context/UserProvider";
-import useCart from "@/common/hooks/useCart";
-import { useToast } from "@/components/ui/use-toast";
-import axios from "axios";
-import io from "socket.io-client";
+import axios from "axios"; // Thư viện Axios để thực hiện các yêu cầu HTTP
+import io from "socket.io-client"; // Kết nối tới server sử dụng WebSocket để nhận sự kiện thời gian thực.
+import Logo from "@/assets/SHOPING.jpg"; // Logo mặc định của trang web
 
-import Logo from "@/assets/SHOPING.jpg";
+import { useClerk, useUser } from "@clerk/clerk-react"; // Hook từ Clerk để quản lý xác thực người dùng
 
-const socket = io("http://localhost:3000");
-import { useClerk, useUser } from "@clerk/clerk-react";
 import {
   Link,
   useLocation,
   useNavigate,
   useSearchParams,
-} from "react-router-dom";
-import { useGetWishList } from "@/pages/(website)/wishlist/action/useGetWishList";
+} from "react-router-dom"; // Hook từ React Router để điều hướng và lấy thông tin URL
 
+import { useGetWishList } from "@/pages/(website)/wishlist/action/useGetWishList"; // Custom hook để lấy danh sách yêu thích của người dùng
+
+const socket = io(import.meta.env.VITE_SOCKET_URL); // Kết nối tới server WebSocket
+
+import ThemeToggle from "./ThemeToggle"; // Component để chuyển đổi chủ đề (sáng/tối)
+
+// Danh sách các mục menu
 const menuItems = [
   { label: "Trang chủ", to: "/" },
   { label: "Về chúng tôi", to: "/about" },
   { label: "Sản phẩm", to: "/shopping" },
   { label: "Dịch vụ", to: "/services" },
   { label: "Tin tức", to: "/blog" },
-  // { label: "Trưng bày", to: "/" },
-  // { label: "Liên hệ", href: "#" },
 ];
 
+//====================================================================================================================================================================================================================//
 const Header = () => {
+  // Hook từ Clerk và Context người dùng
   const { isSignedIn, user } = useUser();
-  const { _id } = useUserContext();
+  const { _id } = useUserContext(); // Lấy _id của người dùng hiện tại từ Context (UserProvider- MongoDB)
   const { openSignIn, openSignUp } = useClerk();
-  const [isOpen, setIsOpen] = useState(false);
-  const [logoUrl, setLogoUrl] = useState<string>("");
-  const [showUserInfo, setShowUserInfo] = useState(false);
-  //thông báo
-  const [notifications, setNotifications] = useState<any[]>([]); // Danh sách thông báo
-  const [unreadCount, setUnreadCount] = useState<number>(0); // Số lượng thông báo chưa đọc
+
+  // State quản lý giao diện và hành vi
+  const [isOpen, setIsOpen] = useState(false); // Trạng thái mở/đóng của ô tìm kiếm
+  const [logoUrl, setLogoUrl] = useState<string>(""); // URL của logo, mặc định là Logo.jpg
+  const [showUserInfo, setShowUserInfo] = useState(false); //quyết định có hiển thị tên, ảnh người dùng không (sau khi đăng nhập xong thì mới hiển thị).
+
+  // State quản lý thông báo
+  const [notifications, setNotifications] = useState<any[]>([]); // Danh sách thông báo hiện tại
+  const [unreadCount, setUnreadCount] = useState<number>(0); //Số lượng thông báo chưa đọc
   const [isNotificationsOpen, setIsNotificationsOpen] =
-    useState<boolean>(false);
-  const [isMarkAllDropdownOpen, setIsMarkAllDropdownOpen] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+    useState<boolean>(false); // Bật/tắt khung thông báo
+  const [isMarkAllDropdownOpen, setIsMarkAllDropdownOpen] = useState(false); // Kiểm soát menu phụ trong thông báo (nút 3 chấm)
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null); //Xác định thông báo nào đang mở menu ba chấm (...) để xoá
+
+  // Thông báo Toast
   const { toast } = useToast();
-  const [keyProduct, setKeyProduct] = useState("");
+
+  // Hook router
   const { pathname } = useLocation();
-
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
 
-  function handleSearch() {
-    if (!keyProduct) return;
+  // Tìm kiếm
+  const [searchParams, setSearchParams] = useSearchParams(); // thao tác với query string trên URL
+  const [keyProduct, setKeyProduct] = useState(""); // Chứa từ khoá người dùng nhập để tìm kiếm sản phẩm
+  const [suggestedKeywords, setSuggestedKeywords] = useState<string[]>([]); // Danh sách từ khoá gợi ý từ API
+  const [loadingSuggest, setLoadingSuggest] = useState(false); // Trạng thái loading khi lấy gợi ý từ khoá
+  const [highlightedIndex, setHighlightedIndex] = useState(-1); // Chỉ mục của từ khoá được highlight trong danh sách gợi ý
+
+  // Hook giỏ hàng và wishlist
+  const { cart, isLoading } = useCart(_id); // Lấy giỏ hàng của người dùng
+  const { wishList, isError } = useGetWishList(_id); // Lấy danh sách yêu thích của người dùng
+  //====================================================================================================================================================================================================================//
+
+  // Hàm xử lý tìm kiếm khi người dùng nhấn Enter hoặc click vào gợi ý
+  function handleSearch(keyword?: string) {
+    const searchKey = keyword ?? keyProduct;
+    if (!searchKey) return;
 
     if (pathname === "/shopping") {
-      console.log("OK");
-      searchParams.set("search", keyProduct);
+      searchParams.set("search", searchKey);
       setSearchParams(searchParams);
     } else {
-      navigate(`/shopping?search=${keyProduct}`);
+      navigate(`/shopping?search=${encodeURIComponent(searchKey)}`);
     }
-    setKeyProduct("");
+
+    setTimeout(() => {
+      setKeyProduct("");
+    }, 200);
+
     setIsOpen(false);
   }
 
-  const { cart, isLoading } = useCart(_id);
-  const { wishList, isError } = useGetWishList(_id);
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
-
+  // Mở cửa sổ đăng nhập hoặc đăng ký --> thành công sẽ chuyển hướng về /
   const opensignin = async () => {
     await openSignIn({
       redirectUrl: "/",
@@ -87,10 +107,12 @@ const Header = () => {
     });
   };
 
+  // Lấy logo từ API
   const fetchLogo = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/logo");
-      const data = await response.json();
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/logo`);
+
+      const data = await response.data; // Giả sử API trả về một mảng chứa logo
 
       if (data && data.length > 0) {
         setLogoUrl(data[0].image);
@@ -100,53 +122,78 @@ const Header = () => {
     }
   };
 
+  // Lấy gợi ý từ khóa khi người dùng nhập vào ô tìm kiếm
+  useEffect(() => {
+    if (!keyProduct || keyProduct.length < 2) {
+      setSuggestedKeywords([]);
+      return;
+    }
+
+    const delayDebounce = setTimeout(async () => {
+      try {
+        setLoadingSuggest(true);
+        const res = await axios.get(
+          `${
+            import.meta.env.VITE_API_URL
+          }/products/keywords?keyword=${keyProduct}`
+        );
+        setSuggestedKeywords(res.data);
+      } catch (err) {
+        console.error("Gợi ý từ khóa lỗi:", err);
+      } finally {
+        setLoadingSuggest(false);
+      }
+    }, 300); // Thực hiện sau 300ms khi người dùng dừng gõ
+
+    return () => clearTimeout(delayDebounce);
+  }, [keyProduct]);
+
   useEffect(() => {
     fetchLogo();
   }, []);
 
+  // Mỗi khi người dùng chuyển trang (pathname thay đổi), sẽ scroll về đầu trang
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  // Sau khi người dùng đăng nhập, mới hiển thị avatar và tên
   useEffect(() => {
     if (isSignedIn) {
-      // const timer = setTimeout(() => {
-      setShowUserInfo(true); // Sau 1 giây sẽ hiển thị thông tin người dùng
-      // }, 1000);
-
-      // return () => clearTimeout(timer);
+      setShowUserInfo(true);
     }
-  }, [isSignedIn]); // Chạy lại effect khi trạng thái người dùng thay đổi
+  }, [isSignedIn]);
 
   // Tham gia phòng socket khi _id thay đổi
-
   useEffect(() => {
     if (_id) {
-      socket.emit("join_room", _id); // Tham gia phòng với userId
-      // console.log(`User với id: ${_id} đã tham gia phòng`);
+      socket.emit("join_room", _id);
     }
   }, [_id]);
 
-  // Lấy thông báo từ API
+  // Lấy thông báo từ API (không bị trùng lặp)
   const fetchNotifications = async () => {
+    if (!_id) return;
+
     try {
       const response = await axios.get(
-        `http://localhost:8080/api/notifications/${_id}`
+        `${import.meta.env.VITE_API_URL}/notifications/${_id}`
       );
 
       const { notifications: newNotifications = [] } = response.data || {};
 
       if (!Array.isArray(newNotifications)) {
         console.error(
-          "API response.notifications is not an array",
+          "API response.notifications is not an array:",
           newNotifications
         );
         return;
       }
 
-      // Cập nhật thông báo
-      setNotifications((prevNotifications) => [
-        ...prevNotifications,
-        ...newNotifications,
-      ]);
+      // ❗ Thay vì nối thêm vào danh sách cũ (tránh trùng), gán mới hoàn toàn
+      setNotifications(newNotifications);
 
-      // Đếm thông báo chưa đọc
+      // ✅ Đếm thông báo chưa đọc
       const unreadCount = newNotifications.filter((n) => !n.isRead).length;
       setUnreadCount(unreadCount);
     } catch (error) {
@@ -154,40 +201,56 @@ const Header = () => {
     }
   };
 
-  // Đánh dấu thông báo là đã đọc
+  // Xử lý khi người dùng click vào thông báo => đánh dấu thông báo đã đọc
   const handleNotificationClick = async (notificationId: string) => {
     try {
+      // Gửi yêu cầu PATCH đến server để đánh dấu thông báo là đã đọc
       await axios.patch(
-        `http://localhost:8080/api/notifications/mark-as-read/${notificationId}`
+        `${
+          import.meta.env.VITE_API_URL
+        }/notifications/mark-as-read/${notificationId}`
       );
+
+      // Cập nhật trạng thái isRead trong state hiện tại
       setNotifications((prevNotifications) =>
         prevNotifications.map((notif) =>
           notif._id === notificationId ? { ...notif, isRead: true } : notif
         )
       );
-      // Lấy lại số lượng thông báo chưa đọc từ server sau khi thay đổi
+
+      // Gửi yêu cầu GET để lấy lại số lượng thông báo chưa đọc từ backend
       const response = await axios.get(
-        `http://localhost:8080/api/notifications/unread-count/${_id}`
+        `${import.meta.env.VITE_API_URL}/notifications/unread-count/${_id}`
       );
+
+      // Cập nhật số lượng thông báo chưa đọc
       setUnreadCount(response.data.unreadCount);
     } catch (error) {
       console.error("Error marking notification as read:", error);
+      toast({
+        variant: "destructive",
+        title: "Lỗi",
+        description: "Không thể đánh dấu thông báo là đã đọc.",
+      });
     }
   };
 
+  // Đánh dấu tất cả thông báo là đã đọc
   const markAllAsRead = async () => {
     try {
+      // Gửi yêu cầu PATCH đến server để đánh dấu tất cả thông báo là đã đọc
       await axios.patch(
-        `http://localhost:8080/api/notifications/mark-as-read/all`,
+        `${import.meta.env.VITE_API_URL}/notifications/mark-as-read/all`,
         {
           userId: _id,
         }
       );
+      // Cập nhật trạng thái isRead trong state hiện tại
       setNotifications((prevNotifications) =>
         prevNotifications.map((notif) => ({ ...notif, isRead: true }))
       );
       setUnreadCount(0); // Reset số lượng chưa đọc về 0
-      setIsMarkAllDropdownOpen(false);
+      setIsMarkAllDropdownOpen(false); // Đóng menu phụ sau khi đánh dấu tất cả là đã đọc
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
       toast({
@@ -198,16 +261,29 @@ const Header = () => {
     }
   };
 
-  // Xóa thông báo
+  // Xóa một thông báo
   const handleDeleteNotification = async (notificationId: string) => {
     try {
+      // Gửi yêu cầu xóa lên server
       await axios.delete(
-        `http://localhost:8080/api/notifications/${notificationId}`
+        `${import.meta.env.VITE_API_URL}/notifications/${notificationId}`
       );
+
+      // Cập nhật danh sách thông báo (xoá khỏi state)
       setNotifications((prevNotifications) =>
         prevNotifications.filter((notif) => notif._id !== notificationId)
       );
+
+      // Đóng dropdown ba chấm nếu đang mở
       setOpenDropdown(null);
+
+      // Gửi yêu cầu GET để lấy lại số lượng thông báo chưa đọc từ backend
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/notifications/unread-count/${_id}`
+      );
+
+      // Cập nhật số lượng thông báo chưa đọc
+      setUnreadCount(response.data.unreadCount);
     } catch (error) {
       console.error("Error deleting notification:", error);
       toast({
@@ -218,7 +294,7 @@ const Header = () => {
     }
   };
 
-  // Effect: Lấy thông báo lần đầu tiên
+  // Lấy thông báo lần đầu tiên
   useEffect(() => {
     if (_id) fetchNotifications();
   }, [_id]);
@@ -227,11 +303,9 @@ const Header = () => {
   useEffect(() => {
     // Lắng nghe sự kiện orderNotification
     socket.on("orderNotification", (newNotification) => {
-      // console.log("Thông báo nhận được:", newNotification);
-
-      // Kiểm tra nếu thông báo không phải của tài khoản hiện tại
+      // Chỉ xử lý nếu thông báo là của người dùng hiện tại.
       if (newNotification.userId !== _id) {
-        return; // Nếu không phải, bỏ qua thông báo này
+        return;
       }
 
       setNotifications((prevNotifications) => {
@@ -243,10 +317,13 @@ const Header = () => {
               notif.orderId === newNotification.orderId
           )
         ) {
-          return prevNotifications; // Nếu trùng, không thêm vào nữa
+          return prevNotifications; // Nếu trùng, không thêm Tb mới vào nữa
         }
 
+        // Nếu không trùng, thêm thông báo mới vào đầu danh sách
         const updatedNotifications = [newNotification, ...prevNotifications];
+
+        // Cập nhật số lượng thông báo chưa đọc
         const unreadCount = updatedNotifications.filter(
           (n) => !n.isRead
         ).length;
@@ -258,15 +335,17 @@ const Header = () => {
 
     // Lắng nghe sự kiện orderStatusNotification
     socket.on("orderStatusNotification", (newNotification) => {
-      // console.log("Thông báo trạng thái nhận được:", newNotification);
-
       // Kiểm tra nếu thông báo không phải của tài khoản hiện tại
       if (newNotification.userId !== _id) {
         return; // Nếu không phải, bỏ qua thông báo này
       }
 
       setNotifications((prevNotifications) => {
+        // Cập nhật danh sách thông báo
+        // Trạng thái đơn hàng có thể cập nhiều lần nên không cần kiểm tra trùng lặp
         const updatedNotifications = [newNotification, ...prevNotifications];
+
+        // Cập nhật số lượng thông báo chưa đọc
         const unreadCount = updatedNotifications.filter(
           (n) => !n.isRead
         ).length;
@@ -288,47 +367,50 @@ const Header = () => {
         className={`fixed left-0 top-0 w-full z-40 transition-all duration-300 ease-in-out`}
       >
         {/* Header TOP */}
-        <div
-          className={`bg-white h-[40px] md:h-[60px] border-b border-b-[#eee]`}
-        >
+        <div className="bg-background h-[40px] md:h-[60px] border-b border-border">
           <div className="border-x-0 lg:border-x-[50px] border-transparent relative">
             <div className="flex">
+              {/* Đây là khối trái - trên */}
+              {/* ❗ Chỉ hiện ở desktop (ẩn ở mobile) */}
               {/* Contact INFO */}
-              <div className="lg:w-5/12 hidden lg:inline px-[15px] ">
-                <div className="border-l border-[#eee] border-[0] py-[10px] lg:px-[10px] lg:py-[20px] xl:px-[25px] xl:py-5 text-[10px] leading-5 text-[#888] uppercase relative inline-block">
-                  <b className="text-[#555] font-bold">liên hệ: </b>
+              <div className="lg:w-5/12 hidden lg:inline px-[15px]">
+                <div className="border-l border-border py-[10px] lg:px-[10px] lg:py-[20px] xl:px-[25px] xl:py-5 text-[10px] leading-5 text-muted-foreground uppercase inline-block">
+                  <b className="text-foreground font-bold">liên hệ: </b>
                   <a
-                    className="cursor-pointer hover:text-[#b8cd06]"
-                    href="tel:+3 (523) 555 123 8745"
+                    className="cursor-pointer hover:text-primary"
+                    href="tel:(+84) 1900 636 789"
                   >
-                    +3 (523) 555 123 8745
+                    (+84) 1900 636 789
                   </a>
                 </div>
-                {/* CLASS BI LAP */}
-                <div className="border-x border-[#eee] border-[0] py-[10px] lg:px-[10px] lg:py-[20px] xl:px-[25px] xl:py-5 text-[10px] leading-5 text-[#888] uppercase relative inline-block">
-                  <b className="text-[#555] font-bold">email: </b>
+
+                <div className="border-x border-border py-[10px] lg:px-[10px] lg:py-[20px] xl:px-[25px] xl:py-5 text-[10px] leading-5 text-muted-foreground uppercase inline-block">
+                  <b className="text-foreground font-bold">email: </b>
                   <a
-                    className="cursor-pointer hover:text-[#b8cd06]"
-                    href="mailto:office@exzo.com"
+                    className="cursor-pointer hover:text-primary"
+                    href="mailto:maianh@gmail.com"
                   >
-                    office@exzo.com
+                    maianh@gmail.com
                   </a>
                 </div>
               </div>
 
-              {/* NAVIGATION */}
+              {/* Đây là khối phải - trên */}
               <div className="w-full lg:w-7/12 text-right flex justify-between lg:justify-end items-center px-[15px]">
-                <div className="border-l border-r lg:border-r-0 border-[#eee] px-[15px] py-[10px] md:p-5 lg:px-[10px] lg:py-[20px] xl:px-[25px] xl:py-5 text-[10px] leading-5 text-[#555] uppercase">
+                <div className="border-l border-r lg:border-r-0 border-border px-[15px] py-[10px] md:p-5 lg:px-[10px] lg:py-[20px] xl:px-[25px] xl:py-5 text-[10px] leading-5 text-muted-foreground uppercase">
+                  {/* Hiển thị thông tin người dùng nếu đã đăng nhập, nếu không thì hiển thị nút đăng nhập/đăng ký */}
                   {isSignedIn && showUserInfo ? (
                     <Link className="flex gap-2" to="/users">
+                      {/* Hiển thị ảnh đại diện người dùng */}
                       <img
                         className="rounded-full w-[20px] h-[20px] object-cover"
                         src={user?.imageUrl}
                         alt=""
-                      />{" "}
-                      <span>
-                        <span>{user?.firstName}</span>
-                        <span className="ml-0.5">{user?.lastName}</span>
+                      />
+                      {/* Hiển thị tên người dùng */}
+                      <span className="text-foreground">
+                        <span className="ml-0.5">{user?.firstName}</span>
+                        <span className="ml-0.5 ">{user?.lastName}</span>
                       </span>
                     </Link>
                   ) : (
@@ -336,7 +418,7 @@ const Header = () => {
                       <Link
                         to="#"
                         onClick={opensignin}
-                        className="cursor-pointer hover:text-[#b8cd06] transition-all"
+                        className="cursor-pointer hover:text-primary transition-all"
                       >
                         <b>Đăng nhập</b>
                       </Link>
@@ -344,7 +426,7 @@ const Header = () => {
                       <Link
                         to="#"
                         onClick={opensignup}
-                        className="cursor-pointer hover:text-[#b8cd06] transition-all"
+                        className="cursor-pointer hover:text-primary transition-all"
                       >
                         <b>Đăng ký</b>
                       </Link>
@@ -352,25 +434,30 @@ const Header = () => {
                   )}
                 </div>
 
-                <div className="border-l border-[#eee] py-[10px] lg:px-[10px] lg:py-[20px] xl:px-[25px] xl:py-5 text-[10px] leading-5 text-[#555] uppercase hidden lg:inline relative">
+                {/* ❗ Chỉ hiện ở desktop (ẩn ở mobile) */}
+                {/* Yêu thích */}
+                <div className="border-l border-border py-[10px] lg:px-[10px] lg:py-[20px] xl:px-[25px] xl:py-5 text-[10px] leading-5 text-muted-foreground uppercase hidden lg:inline relative">
                   <Link
                     to="/wishlist"
-                    className="cursor-pointer hover:text-[#b8cd06] transition-all"
+                    className="cursor-pointer hover:text-primary transition-all"
                   >
                     <SlHeart className="text-xl" />
-                    <span className="absolute top-3 right-4 flex items-center justify-center w-[19px] h-[19px] rounded-full text-[11px] text-white bg-red-500">
+                    {/* Số lượng sản phẩm đã yêu thích */}
+                    <span className="absolute top-3 right-4 flex items-center justify-center w-[19px] h-[19px] rounded-full text-[11px] text-white bg-destructive">
                       {wishList?.products?.length || 0}
                     </span>
                   </Link>
                 </div>
 
+                {/* ❗ Chỉ hiện ở desktop (ẩn ở mobile) */}
                 {/* Thông báo */}
                 <div
-                  className="relative border-l border-[#eee] py-[10px] lg:px-[10px] lg:py-[16px] xl:px-[25px] text-[10px] leading-5 text-[#555] uppercase hidden lg:inline"
-                  onMouseEnter={() => setIsNotificationsOpen(true)} // Mở thông báo khi hover
-                  onMouseLeave={() => setIsNotificationsOpen(false)} // Mở thông báo khi hover
+                  className="relative border-l border-border py-[10px] lg:px-[10px] lg:py-[16px] xl:px-[25px] text-[10px] leading-5 text-muted-foreground uppercase hidden lg:inline"
+                  onMouseEnter={() => setIsNotificationsOpen(true)} //Di chuột vào chuông sẽ mở thông báo
+                  onMouseLeave={() => setIsNotificationsOpen(false)} // Di chuột ra khỏi chuông sẽ đóng thông báo
                 >
-                  <div className=" hover:text-[#b8cd06] cursor-pointer">
+                  <div className="hover:text-primary cursor-pointer">
+                    {/* Chuông*/}
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
@@ -385,9 +472,8 @@ const Header = () => {
                         d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5"
                       />
                     </svg>
-
-                    {/* Chấm đỏ thông báo */}
-                    <span className="absolute top-2 right-4 flex items-center justify-center w-[19px] h-[19px] rounded-full text-[11px] text-white bg-red-500">
+                    {/* Số lượng thông báo chưa đọc */}
+                    <span className="absolute top-2 right-4 flex items-center justify-center w-[19px] h-[19px] rounded-full text-[11px] text-white bg-destructive">
                       {unreadCount > 0 ? unreadCount : 0}
                     </span>
                   </div>
@@ -395,54 +481,49 @@ const Header = () => {
                   {/* Dropdown Thông báo */}
                   {isNotificationsOpen && (
                     <div
-                      className="absolute right-0 mt-2 w-[300px] bg-white shadow-2xl rounded-lg max-h-96 overflow-y-auto border border-gray-200 scrollbar-hide"
-                      style={{
-                        scrollbarWidth: "none", // Firefox
-                        msOverflowStyle: "none", // IE & Edge
-                      }}
+                      className="absolute right-0 w-[300px] bg-card text-card-foreground shadow-2xl rounded-lg max-h-96 overflow-y-auto border border-border z-50"
                       onMouseLeave={() => {
                         setIsMarkAllDropdownOpen(false);
                         setOpenDropdown(null);
                       }}
                     >
-                      <div className="sticky top-0 z-10 bg-white p-2 flex justify-between items-center">
+                      <div className="sticky top-0 z-10 bg-card p-2 flex justify-between items-center">
                         <h1 className="text-[13px] font-bold">
                           Thông báo mới nhận
                         </h1>
-
-                        {/* Nút ba chấm */}
                         <div className="relative">
                           <button
                             onClick={() =>
                               setIsMarkAllDropdownOpen((prev) => !prev)
                             }
-                            className="pb-3 text-[23px]  transition"
+                            className="pb-3 text-[23px] transition"
                           >
                             ...
                           </button>
                           {isMarkAllDropdownOpen && (
-                            <div className="absolute right-2 mt-0 bg-white shadow-lg shadow-gray-500 rounded-md z-10">
+                            <div className="absolute right-2 mt-0 bg-card shadow-lg rounded-md z-10 border border-border">
                               <button
                                 onClick={markAllAsRead}
-                                className="block w-[200px] py-2 text-sm rounded-md  text-gray-800 hover:bg-gray-100"
+                                className="block w-[200px] py-2 text-sm rounded-md text-foreground hover:bg-muted"
                               >
-                                Đánh dấu tất cả là đã đọc
+                                Đánh dấu tất cả đã đọc
                               </button>
                             </div>
                           )}
                         </div>
                       </div>
 
+                      {/* Danh sách thông báo */}
                       {notifications.length > 0 ? (
                         <ul className="space-y-2 p-2">
                           {notifications.map((notification) => (
                             <li
                               key={notification._id}
-                              className={`flex items-center gap-2 p-3 cursor-pointer hover:bg-gray-100 rounded-lg transition-all duration-200 ${
+                              className={`flex items-start gap-2 px-3 py-5 rounded-lg transition-all duration-200 cursor-pointer ${
                                 !notification.isRead
-                                  ? "bg-[#f5ffcc]"
-                                  : "bg-gray-50"
-                              }`}
+                                  ? "bg-yellow-100 dark:bg-yellow-900/20"
+                                  : "bg-muted"
+                              } hover:bg-accent`}
                               onClick={() =>
                                 handleNotificationClick(notification._id)
                               }
@@ -455,53 +536,47 @@ const Header = () => {
                                 />
                               )}
 
-                              <div>
-                                {/* Nội dung thông báo */}
-                                <div className="flex-1 text-xs text-gray-800">
-                                  <Link
-                                    to={"/users/order-history"}
-                                    className="truncate text-wrap"
-                                  >
-                                    <span
-                                      dangerouslySetInnerHTML={{
-                                        __html: notification.message,
-                                      }}
-                                    />
-                                  </Link>
-                                </div>
-
-                                {/* Thời gian thông báo */}
-                                <div className="text-xs text-gray-400">
+                              <div className="flex flex-col gap-1 text-xs w-full">
+                                <Link to="/users/order-history">
+                                  <span
+                                    dangerouslySetInnerHTML={{
+                                      __html: notification.message,
+                                    }}
+                                    className="break-words line-clamp-4"
+                                  />
+                                </Link>
+                                <span className="text-muted-foreground">
                                   {new Date(
                                     notification.createdAt
                                   ).toLocaleString()}
-                                </div>
-
-                                {/* Nút ba chấm */}
-                                <div className="relative">
+                                </span>
+                                <div className="relative ml-auto">
                                   <button
-                                    className="text-[20px] text-gray-500 hover:text-gray-700"
-                                    onClick={() =>
+                                    className="text-[20px] text-muted-foreground hover:text-destructive"
+                                    onClick={(e) => {
+                                      // Ngăn chặn sự kiện click lan truyền để không mở thông báo
+                                      e.stopPropagation();
                                       setOpenDropdown((prev) =>
                                         prev === notification._id
                                           ? null
                                           : notification._id
-                                      )
-                                    }
+                                      );
+                                    }}
                                   >
                                     ...
                                   </button>
                                   {openDropdown === notification._id && (
-                                    <div className="absolute right-1 top-7 bg-white shadow-lg rounded-md z-10">
+                                    <div className="absolute right-5 top-0 bg-card shadow-lg rounded-md z-10 border border-border">
                                       <button
-                                        className="block px-4 py-2 text-sm text-red-600 "
-                                        onClick={() =>
+                                        className="block px-2 py-2 text-sm text-red-600 hover:bg-muted"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
                                           handleDeleteNotification(
                                             notification._id
-                                          )
-                                        }
+                                          );
+                                        }}
                                       >
-                                        Xóa thông báo
+                                        Xóa
                                       </button>
                                     </div>
                                   )}
@@ -511,40 +586,48 @@ const Header = () => {
                           ))}
                         </ul>
                       ) : (
-                        <div className="p-6 text-center text-xs text-gray-500">
-                          Không có dữ liệu!
+                        <div className="p-6 text-center text-xs text-muted-foreground">
+                          Không có thông báo gì á!
                         </div>
                       )}
                     </div>
                   )}
                 </div>
 
-                <div className="border-x border-[#eee] py-[10px] lg:px-[10px] lg:py-[20px] xl:px-[25px] xl:py-5 text-[10px] leading-5 text-[#555] uppercase relative hidden lg:inline">
+                {/* ❗ Chỉ hiện ở desktop (ẩn ở mobile) */}
+                {/* Giỏ hàng */}
+                <div className="border-x border-border py-[10px] lg:px-[10px] lg:py-[20px] xl:px-[25px] xl:py-5 text-[10px] leading-5 text-foreground uppercase relative hidden lg:inline">
                   <Link
                     to="/cart"
-                    className="cursor-pointer text-[#555] hover:text-[#b8cd06] transition-all flex items-center"
+                    className="cursor-pointer hover:text-primary transition-all flex items-center"
                   >
                     <b className="font-bold">giỏ hàng</b>
                     <span className="relative">
                       <IoBagHandleSharp className="text-xl ml-1 mr-2" />
-                      <span className="absolute -top-2 -right-1 bg-[#b8cd06] text-white text-[10px] w-[20px] h-[20px] text-center rounded-full">
+                      <span className="absolute -top-2 -right-1 bg-primary text-primary-foreground text-[10px] w-[20px] h-[20px] text-center rounded-full">
                         {cart?.products?.length || 0}
                       </span>
                     </span>
                   </Link>
                 </div>
 
-                {/* HumBurger Icon */}
-                <MobileNav />
+                {/* MobileNav & ThemeToggle giữ nguyên */}
+                <div className="ml-2 flex items-center gap-4">
+                  {/* ❗ Chỉ hiện ở mobile */}
+                  <MobileNav />
+                  <ThemeToggle />
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Header BOTTOM */}
-        <div className="h-[60px] md:h-[98px] bg-white border-b border-b-[#eee] shadow-custom">
+        <div className="h-[60px] md:h-[98px] bg-background border-b border-border shadow-custom relative">
           <div className="border-x-0 lg:border-x-[50px] border-transparent h-full">
+            {/* Logo + Nav */}
             <div className="flex h-full items-center">
+              {/* Logo điều hướng đến trang chủ - trái*/}
               <Link to="/" className="w-4/12 md:w-2/12 px-[15px]">
                 <img
                   className="w-20 md:w-36"
@@ -554,54 +637,60 @@ const Header = () => {
               </Link>
 
               <div className="w-8/12 md:w-10/12 justify-items-end px-[15px]">
+                {/* ❗ Chỉ hiện ở desktop (ẩn ở mobile) */}
+                {/* Menu chính */}
                 <nav className="hidden lg:block">
-                  <ul className="flex">
+                  <ul className="flex gap-2">
                     {menuItems.map((item) => (
                       <li className="!list-none" key={item.to}>
                         <Link
-                          className={`text-[11px] leading-4 uppercase text-[#343434] font-bold rounded-2xl px-5 py-[9px] hover:bg-[#b8cd06] hover:text-white hover:shadow-custom transition-all ${
-                            pathname === item.to
-                              ? "bg-[#b8cd06] text-white"
-                              : ""
-                          }`}
                           to={item.to}
+                          className={`text-[11px] leading-4 uppercase font-bold rounded-2xl px-5 py-[9px] transition-all                       
+                          ${
+                            pathname === item.to
+                              ? "bg-primary text-primary-foreground shadow-custom" //Highlight mục đang chọn
+                              : "text-foreground hover:bg-primary hover:text-primary-foreground hover:shadow-custom"
+                          }`}
                         >
                           {item.label}
                         </Link>
                       </li>
                     ))}
-
+                    {/* Tìm kiếm */}
                     <li className="!list-none">
                       <IoSearch
-                        className="text-2xl ml-2 hover:cursor-pointer hover:text-[#b8cd06] transition-all"
+                        className="text-2xl ml-2 cursor-pointer text-foreground hover:text-primary transition-all"
+                        // Bật tắt thanh tìm kiếm mở rộng
                         onClick={() => setIsOpen(!isOpen)}
                       />
                     </li>
                   </ul>
                 </nav>
 
+                {/* ❗ Chỉ hiện ở mobile */}
                 <div className="lg:hidden flex gap-3">
+                  {/* Tìm kiếm */}
                   <IoSearch
-                    className="text-3xl ml-2 hover:cursor-pointer hover:text-[#b8cd06] transition-all"
+                    className="text-3xl ml-2 cursor-pointer text-foreground hover:text-primary transition-all"
                     onClick={() => setIsOpen(!isOpen)}
                   />
+
+                  {/* Yêu thích */}
                   <Link to="/wishlist" className="relative">
-                    <SlHeart className="text-3xl ml-2 hover:cursor-pointer hover:text-[#b8cd06] transition-all" />
-                    <span
-                      className="absolute -top-3 left-7 flex items-center justify-center w-[19px] h-[19px] rounded-full text-[11px] text-white bg-red-500"
-                      key="dfg;fdvbncvbdgj"
-                    >
+                    <SlHeart className="text-3xl ml-2 cursor-pointer text-foreground hover:text-primary transition-all" />
+                    <span className="absolute -top-3 left-7 flex items-center justify-center w-[19px] h-[19px] rounded-full text-[11px] text-white bg-destructive">
                       {wishList?.products?.length || 0}
                     </span>
                   </Link>
 
                   {/* Thông báo */}
                   <div
-                    className="relative lg:hidden border-[#eee]  text-[10px] leading-5  uppercase"
+                    className="relative lg:hidden text-[10px] leading-5 uppercase text-muted-foreground"
                     onMouseEnter={() => setIsNotificationsOpen(true)}
                     onMouseLeave={() => setIsNotificationsOpen(false)}
                   >
-                    <div className=" hover:text-[#b8cd06] cursor-pointer">
+                    <div className="cursor-pointer hover:text-primary">
+                      {/* Chuông nhé */}
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
@@ -616,48 +705,40 @@ const Header = () => {
                           d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0M3.124 7.5A8.969 8.969 0 0 1 5.292 3m13.416 0a8.969 8.969 0 0 1 2.168 4.5"
                         />
                       </svg>
-
-                      {/* Chấm đỏ thông báo */}
-                      <span className="absolute -top-3 -right-2 flex items-center justify-center w-[19px] h-[19px] rounded-full text-[11px] text-white bg-red-500">
+                      <span className="absolute -top-3 -right-2 flex items-center justify-center w-[19px] h-[19px] rounded-full text-[11px] text-white bg-destructive">
                         {unreadCount > 0 ? unreadCount : 0}
                       </span>
                     </div>
 
-                    {/* Dropdown Thông báo */}
+                    {/* Dropdown thông báo */}
                     {isNotificationsOpen && (
                       <div
-                        className="absolute right-0  w-[300px] bg-white shadow-2xl rounded-lg max-h-96 overflow-y-auto border border-gray-200 scrollbar-hide"
-                        style={{
-                          scrollbarWidth: "none", // Firefox
-                          msOverflowStyle: "none", // IE & Edge
-                        }}
+                        className="absolute right-0 w-[300px] bg-card text-card-foreground shadow-2xl rounded-lg max-h-96 overflow-y-auto border border-border z-50"
                         onMouseLeave={() => {
                           setIsMarkAllDropdownOpen(false);
                           setOpenDropdown(null);
                         }}
                       >
-                        <div className="sticky top-0 z-10 bg-white p-2 flex justify-between items-center">
+                        <div className="sticky top-0 z-10 bg-card p-2 flex justify-between items-center">
                           <h1 className="text-[13px] font-bold">
                             Thông báo mới nhận
                           </h1>
-
-                          {/* Nút ba chấm */}
                           <div className="relative">
                             <button
                               onClick={() =>
                                 setIsMarkAllDropdownOpen((prev) => !prev)
                               }
-                              className="pb-3 text-[23px]  transition"
+                              className="pb-3 text-[23px] transition"
                             >
                               ...
                             </button>
                             {isMarkAllDropdownOpen && (
-                              <div className="absolute right-2 mt-0 bg-white shadow-lg shadow-gray-500 rounded-md z-10">
+                              <div className="absolute right-2 mt-0 bg-card shadow-lg rounded-md z-10 border border-border">
                                 <button
                                   onClick={markAllAsRead}
-                                  className="block w-[200px] py-2 text-sm rounded-md  text-gray-800 hover:bg-gray-100"
+                                  className="block w-[200px] py-2 text-sm rounded-md text-foreground hover:bg-muted"
                                 >
-                                  Đánh dấu tất cả là đã đọc
+                                  Đánh dấu tất cả đã đọc
                                 </button>
                               </div>
                             )}
@@ -665,15 +746,16 @@ const Header = () => {
                         </div>
 
                         {notifications.length > 0 ? (
+                          // Danh sách thông báo
                           <ul className="space-y-2 p-2">
                             {notifications.map((notification) => (
                               <li
                                 key={notification._id}
-                                className={`flex items-center gap-2 p-3 cursor-pointer hover:bg-gray-100 rounded-lg transition-all duration-200 ${
+                                className={`flex items-start gap-2 p-3 rounded-lg transition-all duration-200 cursor-pointer ${
                                   !notification.isRead
-                                    ? "bg-[#f5ffcc]"
-                                    : "bg-gray-50"
-                                }`}
+                                    ? "bg-yellow-100 dark:bg-yellow-900/20"
+                                    : "bg-muted"
+                                } hover:bg-accent`}
                                 onClick={() =>
                                   handleNotificationClick(notification._id)
                                 }
@@ -686,53 +768,47 @@ const Header = () => {
                                   />
                                 )}
 
-                                <div>
-                                  {/* Nội dung thông báo */}
-                                  <div className="flex-1 text-xs text-gray-800">
-                                    <Link
-                                      to={"/users/order-history"}
-                                      className="truncate text-wrap"
-                                    >
-                                      <span
-                                        dangerouslySetInnerHTML={{
-                                          __html: notification.message,
-                                        }}
-                                      />
-                                    </Link>
-                                  </div>
-
-                                  {/* Thời gian thông báo */}
-                                  <div className="text-xs text-gray-400">
+                                <div className="flex flex-col gap-1 text-xs w-full">
+                                  <Link to="/users/order-history">
+                                    <span
+                                      dangerouslySetInnerHTML={{
+                                        __html: notification.message,
+                                      }}
+                                      className="break-words line-clamp-3"
+                                    />
+                                  </Link>
+                                  <span className="text-muted-foreground">
                                     {new Date(
                                       notification.createdAt
                                     ).toLocaleString()}
-                                  </div>
+                                  </span>
 
-                                  {/* Nút ba chấm */}
-                                  <div className="relative">
+                                  <div className="relative ml-auto">
                                     <button
-                                      className="text-[20px] text-gray-500 hover:text-gray-700"
-                                      onClick={() =>
+                                      className="text-[20px] text-muted-foreground hover:text-foreground"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
                                         setOpenDropdown((prev) =>
                                           prev === notification._id
                                             ? null
                                             : notification._id
-                                        )
-                                      }
+                                        );
+                                      }}
                                     >
                                       ...
                                     </button>
                                     {openDropdown === notification._id && (
-                                      <div className="absolute right-1 top-7 bg-white shadow-lg rounded-md z-10">
+                                      <div className="absolute right-4 top-0 bg-card shadow-lg rounded-md z-10 border border-border">
                                         <button
-                                          className="block px-4 py-2 text-sm text-red-600 "
-                                          onClick={() =>
+                                          className="block px-2 py-1 text-sm text-red-600 hover:bg-muted"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
                                             handleDeleteNotification(
                                               notification._id
-                                            )
-                                          }
+                                            );
+                                          }}
                                         >
-                                          Xóa thông báo
+                                          Xóa
                                         </button>
                                       </div>
                                     )}
@@ -742,18 +818,19 @@ const Header = () => {
                             ))}
                           </ul>
                         ) : (
-                          <div className="p-6 text-center text-xs text-gray-500">
-                            Không có dữ liệu!
+                          <div className="p-6 text-center text-xs text-muted-foreground">
+                            Không có thông báo nào!
                           </div>
                         )}
                       </div>
                     )}
                   </div>
 
+                  {/* Giỏ hàng */}
                   <span className="relative mr-2">
                     <Link to="/cart">
-                      <IoBagHandleSharp className="text-3xl ml-2 hover:cursor-pointer hover:text-[#b8cd06] transition-all" />
-                      <span className="absolute size-5 rounded-full text-white text-[11px] leading-5 text-center bg-[#b8cd06] top-[-39%] right-[-23%]">
+                      <IoBagHandleSharp className="text-3xl ml-2 cursor-pointer text-foreground hover:text-primary transition-all" />
+                      <span className="absolute size-5 rounded-full text-primary-foreground text-[11px] leading-5 text-center bg-primary top-[-39%] right-[-23%]">
                         {cart?.products?.length || 0}
                       </span>
                     </Link>
@@ -762,32 +839,109 @@ const Header = () => {
               </div>
             </div>
 
-            <div className={`relative -z-10 mx-[15px]`}>
+            {/* Search Bar - Thanh tìm kiếm mở rộng */}
+            <div className="relative -z-30 ">
               <div
-                className={`py-10 pb-[15px] md:pb-10 absolute w-full top-0 left-0 shadow-custom_input transition-all duration-300 bg-white ${
+                className={`py-10 pb-[15px] md:pb-10 absolute w-full top-0 left-0 shadow-custom_input transition-all duration-300 bg-background ${
                   isOpen
-                    ? "translate-y-0 opacity-100"
-                    : "-translate-y-full opacity-0"
+                    ? "translate-y-0 opacity-100" //Mở trượt xuống
+                    : "-translate-y-full opacity-0" // Ẩn trượt lên ngoài khung
                 }`}
               >
-                <div className="px-[15px] flex justify-center">
+                <div className="px-[15px] flex justify-center items-center gap-2">
+                  {/* Nút đóng khung tìm kiếm */}
                   <IoIosClose
-                    className="text-3xl absolute right-0 top-0 mt-2 mr-2 cursor-pointer"
+                    className="text-3xl absolute right-0 top-0 mt-2 mr-2 cursor-pointer text-foreground hover:text-primary"
                     onClick={() => setIsOpen(!isOpen)}
                   />
 
-                  <input
-                    type="text"
-                    value={keyProduct}
-                    onChange={(e) => setKeyProduct(e.target.value)}
-                    placeholder="Nhập từ khóa tìm kiếm"
-                    className="bg-white border-0 border-b border-b-[#eee] outline-0 focus:ring-0 focus:border-b-[#b8cd06] text-[#555] w-full md:w-2/4"
-                  />
-                  <button>
-                    <IoSearch
-                      className="text-2xl hover:text-[#b8cd06]"
-                      onClick={handleSearch}
+                  <div className="relative w-full md:w-3/4 flex items-center border-b border-border focus-within:border-primary">
+                    <input
+                      type="text"
+                      value={keyProduct}
+                      onChange={(e) => {
+                        setKeyProduct(e.target.value);
+                        setHighlightedIndex(-1); // Reset chỉ mục được đánh dấu khi người dùng nhập
+                      }}
+                      placeholder="Nhập từ khóa tìm kiếm sản phẩm ở đây nhé ..."
+                      className="flex-1 bg-background outline-none px-3 py-2 text-sm text-foreground placeholder-muted-foreground"
+                      //Xử lý bàn phím: ↑ ↓ Enter
+                      onKeyDown={(e) => {
+                        if (e.key === "ArrowDown") {
+                          setHighlightedIndex((prev) =>
+                            prev < suggestedKeywords.length - 1 ? prev + 1 : 0
+                          );
+                        } else if (e.key === "ArrowUp") {
+                          setHighlightedIndex((prev) =>
+                            prev > 0 ? prev - 1 : suggestedKeywords.length - 1
+                          );
+                        } else if (e.key === "Enter") {
+                          if (highlightedIndex >= 0) {
+                            const selectedKeyword =
+                              suggestedKeywords[highlightedIndex];
+                            setKeyProduct(selectedKeyword);
+                            setSuggestedKeywords([]);
+                            setIsOpen(false);
+                            handleSearch(selectedKeyword); // ✅ truyền đúng từ gợi ý
+                          } else {
+                            handleSearch(); // dùng giá trị hiện tại trong input
+                          }
+                        }
+                      }}
                     />
+
+                    {/* Gợi ý từ khóa */}
+                    {Array.isArray(suggestedKeywords) &&
+                      suggestedKeywords.length > 0 && (
+                        <ul className="absolute top-full left-0 mt-1 right-0 z-50 bg-card text-card-foreground border border-border rounded shadow text-sm max-h-48 overflow-y-auto">
+                          {suggestedKeywords.map((keyword, idx) => {
+                            const lowerKeyword = keyword.toLowerCase();
+                            const lowerInput = keyProduct.toLowerCase();
+                            const matchIndex = lowerKeyword.indexOf(lowerInput);
+
+                            return (
+                              <li
+                                key={idx}
+                                className={`px-4 py-2 cursor-pointer ${
+                                  highlightedIndex === idx
+                                    ? "bg-primary text-black dark:text-primary-foreground" // Highlight mục được chọn
+                                    : "hover:bg-muted"
+                                }`}
+                                onMouseEnter={() => setHighlightedIndex(idx)}
+                                onClick={() => {
+                                  setKeyProduct(keyword);
+                                  setSuggestedKeywords([]);
+                                  setIsOpen(false);
+                                  handleSearch(keyword); // ✅ truyền trực tiếp
+                                }}
+                              >
+                                {/* In đậm phần khớp với từ khóa */}
+                                {matchIndex >= 0 ? (
+                                  <>
+                                    {keyword.slice(0, matchIndex)}
+                                    <strong className="text-black dark:text-primary-foreground">
+                                      {keyword.slice(
+                                        matchIndex,
+                                        matchIndex + keyProduct.length
+                                      )}
+                                    </strong>
+                                    {keyword.slice(
+                                      matchIndex + keyProduct.length
+                                    )}
+                                  </>
+                                ) : (
+                                  keyword
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                  </div>
+
+                  {/* <button onClick={handleSearch}> */}
+                  <button onClick={() => handleSearch()}>
+                    <IoSearch className="text-2xl text-foreground hover:text-primary" />
                   </button>
                 </div>
               </div>

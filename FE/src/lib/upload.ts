@@ -59,6 +59,7 @@ export const uploadFileMultiple = async (files: FileList) => {
 };
 
 export const UploadFiles = async (product: any) => {
+  //  Tải lên hình ảnh cho sản phẩm và các biến thể => Trả về sản phẩm đã cập nhật với đường dẫn hình ảnh
   if (product.image !== "" && typeof product.image !== "string") {
     const imageUpload = await uploadFile(product.image as File);
     product.image = imageUpload;

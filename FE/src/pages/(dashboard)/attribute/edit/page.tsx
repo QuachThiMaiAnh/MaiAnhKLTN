@@ -17,22 +17,17 @@ import { useParams } from "react-router-dom";
 import { useGetAttributeByID } from "../actions/useGetAttributeByID";
 import { useUpdateAttributeByID } from "../actions/useUpdateAttributeByID";
 
+// Schema kiểm tra dữ liệu đầu vào (zod)
 const formSchema = z.object({
-  name: z
-    .string()
-    .min(1, {
-      message: "Hãy viết tên thuộc tính",
-    })
-    .max(50),
+  name: z.string().min(1, { message: "Hãy viết tên thuộc tính" }).max(50),
 });
 
 const UpdateAttributePage = () => {
-  const { id } = useParams<{ id: string }>();
-  const { updateAttribute, isUpdating } = useUpdateAttributeByID(id!);
+  const { id } = useParams<{ id: string }>(); // Lấy id từ URL
+  const { updateAttribute, isUpdating } = useUpdateAttributeByID(id!); // Sử dụng hook để cập nhật thuộc tính theo ID
+  const { isLoadingAttribute, attribute, error } = useGetAttributeByID(id!);
 
-  const { isLoadingAtribute, atribute, error } = useGetAttributeByID(id!);
-
-  // 1. Define your form.
+  // Khởi tạo form và validate với schema
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -40,20 +35,23 @@ const UpdateAttributePage = () => {
     },
   });
 
-  // 2. Define a submit handler.
+  // Khi dữ liệu attribute đã tải xong thì reset form
   useEffect(() => {
-    if (atribute) {
-      form.reset({ name: atribute.name });
+    if (attribute) {
+      form.reset({ name: attribute.name });
     }
-  }, [atribute, form]);
+  }, [attribute, form]);
 
-  if (isLoadingAtribute) {
+  // Loading ban đầu
+  if (isLoadingAttribute) {
     return <div>Loading...</div>;
   }
 
+  // Gửi form cập nhật
   function onSubmit(values: z.infer<typeof formSchema>) {
-    updateAttribute({ ...values, _id: id });
+    updateAttribute(values);
   }
+
   return (
     <Form {...form}>
       <form
@@ -67,9 +65,8 @@ const UpdateAttributePage = () => {
             <FormItem>
               <FormLabel>Tên thuộc tính</FormLabel>
               <FormControl>
-                <Input placeholder="shadcn" {...field} />
+                <Input placeholder="Nhập tên thuộc tính..." {...field} />
               </FormControl>
-
               <FormMessage />
             </FormItem>
           )}

@@ -1,132 +1,109 @@
-// import { useChatStore } from "@/common/context/useChatStore";
-import { useUserContext } from "@/common/context/UserProvider";
-import { saveUserToDatabase } from "@/common/hooks/useCheckUser";
-import Footer from "@/components/Footer";
-import Header from "@/components/Header";
-import AccountLockedNotification from "@/components/UserbanError";
-import { useClerk, useUser } from "@clerk/clerk-react";
-import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { Outlet } from "react-router-dom";
+import { useUser } from "@clerk/clerk-react";
+import { useClerk } from "@clerk/clerk-react";
+import axios from "axios";
 
-// const socket = io("http://localhost:3000");
+import { useUserContext } from "@/common/context/UserProvider";
+import { saveUserToDatabase } from "@/common/hooks/useCheckUser";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import AccountLockedNotification from "@/components/UserbanError";
 
 const LayoutWebsite = () => {
-  const { user } = useUser();
-  const { login } = useUserContext();
-  const { signOut } = useClerk();
-  const isUserSaved = useRef(false);
-  const [isAccountLocked, setIsAccountLocked] = useState(false);
+  const { user } = useUser(); // Lấy thông tin người dùng hiện tại từ Clerk.
+  const { signOut } = useClerk(); // Hàm để đăng xuất người dùng.
+  const { login } = useUserContext(); // Hàm custom lưu thông tin user vào UserContext sau khi lưu vào database.
+
+  const isUserSaved = useRef(false); // ref để đảm bảo chỉ gọi lưu user vào DB 1 lần
   const [accountStatus, setAccountStatus] = useState<
     "banned" | "deleted" | null
-  >(null);
+  >(null); //Trạng thái tài khoản: "banned", "deleted" hoặc null.
 
-  // Hàm để kiểm tra trạng thái khóa
-  const checkBanStatus = async (userId: string) => {
+  const API_URL = import.meta.env.VITE_API_URL;
+
+  // Xóa trạng thái lỗi tài khoản khi người dùng đóng thông báo
+  const clearAccountStatus = () => {
+    localStorage.removeItem("accountLocked");
+    localStorage.removeItem("accountDeleted");
+    setAccountStatus(null);
+  };
+
+  // Lấy dữ liệu Clerk mở rộng. - Kiểm tra trạng thái tài khoản (bị khóa hoặc bị xóa).
+  // userId = id của người dùng được lấy từ Clerk, sau đó gọi API để kiểm tra trạng thái tài khoản.
+  const checkAndHandleBanStatus = async (userId: string) => {
     try {
-      const response = await axios.get(
-        `http://localhost:8080/api/users/${userId}`
-      );
+      const response = await axios.get(`${API_URL}/users/${userId}`);
       const data = response.data;
+      console.log("Kiểm tra trạng thái tài khoản:", data);
+
+      // Nếu bị khóa (isBanned)	Ghi vào localStorage, cập nhật accountStatus và đăng xuất.
       if (data.clerkData?.isBanned) {
-        // Nếu tài khoản bị khóa
         setAccountStatus("banned");
         localStorage.setItem("accountLocked", "true");
-        setIsAccountLocked(true);
         signOut();
       } else if (data.clerkData?.isDeleted) {
-        // Nếu tài khoản bị xóa
+        // Nếu bị xóa (isDeleted)	Ghi vào localStorage, cập nhật accountStatus và đăng xuất.
         setAccountStatus("deleted");
         localStorage.setItem("accountDeleted", "true");
-        setIsAccountLocked(true);
         signOut();
       }
     } catch (error) {
-      console.error("Lỗi khi kiểm tra trạng thái ban:", error);
+      console.error("Lỗi kiểm tra trạng thái tài khoản:", error);
+    }
+  };
+
+  const saveUserIfNeeded = async (userId: string) => {
+    if (!isUserSaved.current) {
+      try {
+        // Lưu người dùng vào MongoDB backend
+        const data = await saveUserToDatabase(userId);
+        // Ghi lại role vào localStorage	Để phân quyền hoặc chuyển hướng sau này.
+        if (data.role) {
+          localStorage.setItem("userRole", data.role);
+        }
+        // Lưu thông tin người dùng (_id, cleckId,role) vào context toàn cục.
+        login(data);
+        // Đánh dấu là đã lưu user để tránh lưu lại nhiều lần.
+        isUserSaved.current = true;
+      } catch (error) {
+        console.error("Lỗi khi lưu user:", error);
+      }
     }
   };
 
   useEffect(() => {
-    // Kiểm tra trạng thái tài khoản trong localStorage
-    if (localStorage.getItem("accountLocked") === "true") {
+    const localBanStatus = localStorage.getItem("accountLocked");
+    const localDeleteStatus = localStorage.getItem("accountDeleted");
+
+    if (localBanStatus === "true") {
       setAccountStatus("banned");
-      setIsAccountLocked(true);
-    } else if (localStorage.getItem("accountDeleted") === "true") {
+    } else if (localDeleteStatus === "true") {
       setAccountStatus("deleted");
-      setIsAccountLocked(true);
     }
 
     if (user) {
-      // console.log("user", user);
-      // Gọi saveUserToDatabase một lần
-      const saveUserIfNeeded = async () => {
-        if (user && !isUserSaved.current) {
-          try {
-            // Gọi hàm saveUserToDatabase với await
-            const data = await saveUserToDatabase(user.id);
-            if (data.role) {
-              localStorage.setItem("userRole", data.role);
-            }
-            // console.log("data", data);
-            login(data); // Lưu _id vào context
-
-            isUserSaved.current = true; // Đánh dấu đã lưu
-          } catch (error) {
-            console.error("Lỗi khi lưu user vào database:", error);
-          }
-        }
-      };
-      // Kiểm tra trạng thái khóa khi người dùng đăng nhập
-      checkBanStatus(user.id);
-
-      saveUserIfNeeded();
+      checkAndHandleBanStatus(user.id);
+      saveUserIfNeeded(user.id);
     }
-  }, [
-    user,
-    login,
-    // setSelectedUser,
-    // setSelectedConversation,
-    // getMessages,
-    // subscribeToMessages,
-  ]);
-
-  // useEffect(() => {
-  //   socket.on("messageRecieved", (newMessageRecieved) => {
-  //     console.log("message Recieved", newMessageRecieved);
-  //   });
-
-  //   // return () => {
-  //   //   socket.off("newMessage");
-  //   // };
-  // }, []);
-
-  const clearAccountLockedStatus = () => {
-    // Xóa trạng thái từ localStorage và ẩn thông báo
-    localStorage.removeItem("accountLocked");
-    localStorage.removeItem("accountDeleted");
-    setIsAccountLocked(false);
-    setAccountStatus(null);
-  };
+  }, [user]);
 
   return (
     <>
-      {(isAccountLocked || accountStatus) && (
-        <AccountLockedNotification onClose={clearAccountLockedStatus} />
+      {accountStatus && (
+        <AccountLockedNotification onClose={clearAccountStatus} /> // Hiển thị hộp thoại cảnh báo nếu tài khoản bị khóa hoặc xóa.
       )}
+      {/*Header của website (logo, menu, v.v).*/}
       <Header />
-      <Outlet />
+      {/*Vùng nội dung chính, hiển thị trang con qua <Outlet />.  */}
+      <main className="min-h-[calc(100vh-200px)] bg-background text-foreground">
+        {/* Dùng với React Router v6 để render route con (vd: /about, /product). */}
+        <Outlet />
+      </main>
+      {/* Chân trang (footer) chứa thông tin liên hệ, bản quyền,... */}
       <Footer />
     </>
   );
 };
 
 export default LayoutWebsite;
-
-// useEffect(() => {
-//   if (!selectedUser) return;
-//   getMessages(selectedUser!);
-
-//   subscribeToMessages();
-
-//   return () => unsubscribeFromMessages();
-// }, [selectedUser, getMessages, subscribeToMessages, unsubscribeFromMessages]);

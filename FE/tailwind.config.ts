@@ -1,7 +1,9 @@
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  mode: "jit",
-  darkMode: ["class", "class"],
+import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
+import flowbite from "flowbite/plugin";
+
+const config: Config = {
+  darkMode: "class",
   content: [
     "./pages/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
@@ -9,7 +11,6 @@ module.exports = {
     "./src/**/*.{ts,tsx}",
     "./node_modules/flowbite/**/*.js",
   ],
-  prefix: "",
   theme: {
     screens: {
       sm: "640px",
@@ -20,33 +21,37 @@ module.exports = {
       "2xl": "1536px",
     },
     container: {
-      center: "true",
+      center: true,
       padding: "2rem",
     },
     extend: {
       fontFamily: {
-        questrial: ['Questrial"', "sans-serif"],
-        raleway: ['Raleway"', "sans-serif"],
+        questrial: ["Questrial", "sans-serif"],
+        raleway: ["Raleway", "sans-serif"],
       },
       colors: {
+        // Bảng màu light cố định (tuỳ chọn sử dụng)
         light: {
-          50: "#f1f9fa",
-          100: "#dceef1",
-          200: "#bddfe4",
-          300: "#90c7d0",
-          400: "#64abb9",
-          500: "#408a9a",
-          600: "#387282",
-          700: "#325d6c",
-          800: "#304f5a",
-          900: "#2c434d",
-          950: "#192b33",
+          50: "#f7fddf",
+          100: "#ebf8b5",
+          200: "#dcf28a",
+          300: "#c9e95c",
+          400: "#b8cd06",
+          500: "#a1b803",
+          600: "#889e03",
+          700: "#6d8206",
+          800: "#566707",
+          900: "#445206",
+          950: "#263301",
         },
+
+        // Bảng màu chính theo biến HSL động
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -77,24 +82,21 @@ module.exports = {
         },
         status: {
           DEFAULT: "hsl(var(--status))",
-          foreground: "hsl(var(--status-foreground))",
+          foreground: "hsl(var(--status--foreground))",
         },
         border1: {
           DEFAULT: "hsl(var(--border1))",
-          foreground: "hsl(var(--border1-foreground))",
+          foreground: "hsl(var(--border1--foreground))",
         },
         border2: {
           DEFAULT: "hsl(var(--border2))",
-          foreground: "hsl(var(--border2-foreground))",
-        },
-        background1: {
-          DEFAULT: "hsl(var(--foreground))",
-          foreground: "hsl(var(--background))",
+          foreground: "hsl(var(--foreground2))",
         },
         background2: {
           DEFAULT: "hsl(var(--background2))",
           foreground: "hsl(var(--foreground2))",
         },
+
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -113,20 +115,12 @@ module.exports = {
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
         },
       },
       animation: {
@@ -135,5 +129,7 @@ module.exports = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate"), require("flowbite/plugin")],
+  plugins: [tailwindcssAnimate, flowbite],
 };
+
+export default config;

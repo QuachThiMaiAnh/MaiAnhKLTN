@@ -43,15 +43,6 @@ const userSchema = new Schema(
     imageUrl: {
       type: String,
     },
-    address: {
-      type: String,
-      default: "",
-    },
-    // Thông tin thanh toán (có thể mở rộng sau này)
-    // paymentInfo: {
-    //   type: String,
-    //   default: "",
-    // },
     phone: {
       type: String,
       default: "",
@@ -64,28 +55,6 @@ const userSchema = new Schema(
     birthdate: {
       type: Date,
     },
-    // Lịch sử đơn hàng (có thể mở rộng sau này)
-    orders: [
-      {
-        orderId: {
-          type: String,
-          required: true,
-        },
-        orderDate: {
-          type: Date,
-          default: Date.now,
-        },
-        totalAmount: {
-          type: Number,
-          required: true,
-        },
-        status: {
-          type: String,
-          enum: ["Completed", "Pending", "Cancelled"],
-          default: "Pending",
-        },
-      },
-    ],
   },
   {
     collection: "users",

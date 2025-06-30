@@ -1,23 +1,45 @@
-import { createContext, useContext, useReducer } from "react";
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  ReactNode,
+  Dispatch,
+} from "react";
 
-interface UserContextType {
-  // Define the properties of your context here
+// ✅ Kiểu dữ liệu của trạng thái người dùng
+interface UserState {
+  _id: string | null;
+  clerkId: string | null;
+  role: string | null;
+}
+
+// ✅ Kiểu payload cho hành động đăng nhập
+interface LoginPayload {
   _id: string;
   clerkId: string;
   role: string;
-  login: (id: string) => void;
+}
+
+// ✅ Kiểu hành động được hỗ trợ
+type UserAction = { type: "LOGIN"; payload: LoginPayload } | { type: "LOGOUT" };
+
+// ✅ Kiểu dữ liệu cho context
+interface UserContextType extends UserState {
+  login: (userData: LoginPayload) => void;
   logout: () => void;
 }
 
 const UserContext = createContext<UserContextType | null>(null);
 
-const initialState = {
+// ✅ Giá trị khởi tạo ban đầu
+const initialState: UserState = {
   _id: null,
   clerkId: null,
   role: null,
 };
 
-function reducer(state, action) {
+// ✅ Hàm reducer xử lý hành động
+function reducer(state: UserState, action: UserAction): UserState {
   switch (action.type) {
     case "LOGIN":
       return {
@@ -29,7 +51,6 @@ function reducer(state, action) {
 
     case "LOGOUT":
       return {
-        ...state,
         _id: null,
         clerkId: null,
         role: null,
@@ -40,23 +61,24 @@ function reducer(state, action) {
   }
 }
 
-function UserInfoProvider({ children }: { children: React.ReactNode }) {
-  const [{ _id, role, clerkId }, dispatch] = useReducer(reducer, initialState);
+// ✅ Provider bao bọc ứng dụng
+function UserInfoProvider({ children }: { children: ReactNode }) {
+  const [state, dispatch] = useReducer(reducer, initialState);
 
-  function login(id: string) {
-    dispatch({ type: "LOGIN", payload: id });
-  }
+  // Hàm đăng nhập → nhận toàn bộ thông tin user
+  const login = (userData: LoginPayload) => {
+    dispatch({ type: "LOGIN", payload: userData });
+  };
 
-  function logout() {
+  // Hàm đăng xuất → reset lại context
+  const logout = () => {
     dispatch({ type: "LOGOUT" });
-  }
+  };
 
   return (
     <UserContext.Provider
       value={{
-        _id,
-        role,
-        clerkId,
+        ...state,
         login,
         logout,
       }}
@@ -66,12 +88,12 @@ function UserInfoProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// ✅ Hook custom sử dụng context
 function useUserContext() {
   const context = useContext(UserContext);
-
-  if (context === null)
-    throw new Error("UserContext was outside the UserProvider");
-
+  if (context === null) {
+    throw new Error("useUserContext must be used within a UserInfoProvider");
+  }
   return context;
 }
 

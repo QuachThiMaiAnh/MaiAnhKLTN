@@ -1,7 +1,7 @@
 import "./App.css";
 import { Toaster } from "./components/ui/toaster";
 import Router from "./routes";
-import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 function App() {
   return (
@@ -15,3 +15,5 @@ function App() {
 }
 
 export default App;
+
+//====================================================================================================================================================================================================================//

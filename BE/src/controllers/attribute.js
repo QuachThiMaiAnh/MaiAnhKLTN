@@ -1,79 +1,85 @@
-import Attribute from "../models/attribute";
-import AttributeValue from "../models/attributeValue";
+import Attribute from "../models/attribute"; // Import model Attribute (thuộc tính sản phẩm)
+import AttributeValue from "../models/attributeValue"; // Import model giá trị thuộc tính
 
+/**
+ * Hàm kiểm tra tên thuộc tính đã tồn tại chưa (dựa theo slug),
+ * loại trừ chính nó khi đang cập nhật (id hiện tại)
+ */
 async function checkAttributeExist(name, id) {
   const slugCheck = name
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/ /g, "-")
+    .replace(/\s+/g, " ") // Chuẩn hoá khoảng trắng (nhiều khoảng trắng thành một)
+    .replace(/[^a-zA-Z0-9\s-]/g, "") // Loại bỏ ký tự đặc biệt (chỉ giữ chữ, số, khoảng trắng và dấu gạch ngang)
+    .trim() // Loại bỏ khoảng trắng đầu cuối
+    .replace(/ /g, "-") // Thay thế khoảng trắng bằng dấu gạch ngang
     .toLowerCase();
-
-  // Tìm một tài liệu phù hợp
-  const exists = await Attribute.findOne({ slug: slugCheck, _id: { $ne: id } });
-
-  // Trả về true nếu tài liệu tồn tại, ngược lại false
-  return !!exists;
+  // Tìm một thuộc tính có slug giống, nhưng id khác (tránh trùng khi update)
+  return !!(await Attribute.findOne({ slug: slugCheck, _id: { $ne: id } }));
 }
 
+/**
+ * Tạo mới một thuộc tính
+ */
 export const createAttribute = async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name } = req.body; // Lấy tên thuộc tính từ body request
 
+    // Kiểm tra trùng tên trước khi tạo
     const existAttribute = await checkAttributeExist(name);
-
     if (existAttribute) {
       return res.status(400).json({ message: "Thuộc tính đã tồn tại" });
     }
 
-    const attribute = await Attribute.create({
-      name: name.replace(/\s+/g, " ").trim(),
-      slug: name.replace(/\s+/g, " ").trim().replace(/ /g, "-").toLowerCase(),
-    });
+    // Chuẩn hoá tên và slug
+    const normalizedName = name.replace(/\s+/g, " ").trim(); // Chuẩn hoá khoảng trắng (nhiều khoảng trắng thành một)
+    const slug = normalizedName.replace(/ /g, "-").toLowerCase();
+
+    const attribute = await Attribute.create({ name: normalizedName, slug });
     res.status(201).json(attribute);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+/**
+ * Lấy toàn bộ danh sách thuộc tính, có thể lọc theo trạng thái (đang hiển thị hoặc đã ẩn)
+ */
 export const getAllAttribute = async (req, res) => {
   const { _status = "display" } = req.query;
-
-  let flag;
-  if (_status === "hidden") {
-    flag = true;
-  } else {
-    flag = false;
-  }
+  const deletedFlag = _status === "hidden"; // nếu _status là "hidden", nghĩa là muốn lấy thuộc tính đã ẩn
 
   try {
-    const attribute = await Attribute.find({ deleted: flag })
+    const attribute = await Attribute.find({ deleted: deletedFlag })
       .populate({
-        path: "values",
-        match: { deleted: false },
+        path: "values", // lấy thêm thông tin từ bảng giá trị thuộc tính
+        match: { deleted: false }, // chỉ lấy giá trị chưa bị ẩn
         model: "AttributeValue",
-        select: "-__v",
+        select: "-__v", // loại bỏ field __v mặc định của mongoose
       })
       .select("-__v")
-      .sort({ updatedAt: -1 });
+      .sort({ updatedAt: -1 }); // sắp xếp theo thời gian cập nhật mới nhất
 
-    if (attribute.length < 0) {
+    if (attribute.length === 0) {
       return res
         .status(404)
         .json({ message: "Không tìm thấy danh sách thuộc tính" });
     }
+
     res.status(200).json(attribute);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+/**
+ * Lấy chi tiết một thuộc tính theo ID (dùng trong admin)
+ */
 export const getAttributeById = async (req, res) => {
   try {
+    // Tìm thuộc tính theo ID và populate các giá trị liên quan
     const attribute = await Attribute.findOne({ _id: req.params.id }).populate(
       "values"
     );
-
-    if (attribute.length < 0) {
+    if (!attribute) {
       return res.status(404).json({ message: "Không tìm thấy thuộc tính" });
     }
     res.status(200).json(attribute);
@@ -82,87 +88,74 @@ export const getAttributeById = async (req, res) => {
   }
 };
 
+/**
+ * Lấy chi tiết một thuộc tính (cho client - người dùng cuối)
+ * Lọc các giá trị đã bị ẩn
+ */
 export const getAttributeByIdClient = async (req, res) => {
   try {
-    // Tìm thuộc tính với điều kiện `_id` và `deleted`
     const attribute = await Attribute.findOne({
       _id: req.params.id,
       deleted: false,
     });
-
-    // Kiểm tra nếu không tìm thấy thuộc tính
     if (!attribute) {
       return res.status(404).json({ message: "Không tìm thấy thuộc tính" });
     }
 
-    // Sử dụng Promise.all để xử lý song song các giá trị
+    // Lấy từng giá trị theo id, kiểm tra không bị xoá
     const arrayValues = await Promise.all(
-      attribute.values.map(async (value) => {
-        return await AttributeValue.findOne({
-          _id: value,
-          deleted: false,
-        });
-      })
+      attribute.values.map((value) =>
+        AttributeValue.findOne({ _id: value, deleted: false })
+      )
     );
 
-    // Tạo kết quả cuối cùng
     const results = {
       ...attribute._doc,
-      values: arrayValues,
+      values: arrayValues.filter(Boolean), // lọc các giá trị null (đã bị xoá)
     };
 
-    // Trả về dữ liệu
     res.status(200).json(results);
   } catch (error) {
-    // Xử lý lỗi
     res.status(500).json({ message: error.message });
   }
 };
 
+/**
+ * Cập nhật tên thuộc tính và cập nhật cả type trong từng giá trị liên quan
+ */
 export const updateAttribute = async (req, res) => {
   try {
     const { name } = req.body;
-
     const existAttribute = await checkAttributeExist(name, req.params.id);
-
     if (existAttribute) {
       return res.status(400).json({ message: "Tên thuộc tính đã tồn tại" });
     }
 
-    console.log("CONTINUE");
+    const normalizedName = name.replace(/\s+/g, " ").trim();
+    const slug = normalizedName.replace(/ /g, "-").toLowerCase();
 
     const attribute = await Attribute.findOneAndUpdate(
       { _id: req.params.id },
-      {
-        name: name.replace(/\s+/g, " ").trim(),
-        slug: name.replace(/\s+/g, " ").trim().replace(/ /g, "-").toLowerCase(),
-      },
-      { new: true }
+      { name: normalizedName, slug },
+      { new: true } // trả về bản ghi mới sau khi cập nhật
     );
 
-    const newTypeForAttributeValues = await Promise.all(
-      attribute.values.map(async (value) => {
-        return await AttributeValue.findOneAndUpdate(
-          {
-            _id: value._id,
-          },
-          {
-            type: name,
-          },
-          { new: true }
-        );
-      })
+    // Cập nhật "type" trong từng giá trị của thuộc tính
+    await Promise.all(
+      attribute.values.map((value) =>
+        AttributeValue.findOneAndUpdate({ _id: value._id }, { type: name })
+      )
     );
 
-    // if (attribute.length < 0) {
-    //   return res.status(404).json({ message: "Không tìm thấy thuộc tính" });
-    // }
     res.status(200).json(attribute);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+/**
+ * Xoá mềm thuộc tính (ẩn khỏi hệ thống, không xoá khỏi database)
+ */
 export const deleteAttribute = async (req, res) => {
   try {
     const attribute = await Attribute.findByIdAndUpdate(
@@ -179,15 +172,17 @@ export const deleteAttribute = async (req, res) => {
   }
 };
 
+/**
+ * Hiển thị lại thuộc tính đã bị ẩn (xoá mềm)
+ */
 export const displayAttribute = async (req, res) => {
   try {
     const data = await Attribute.findOne({ _id: req.params.id });
-    if (data.length < 0) {
+    if (!data) {
       return res.status(404).json({ message: "Không tìm thấy thuộc tính" });
     }
 
     data.deleted = false;
-
     await data.save();
 
     return res.json({ message: "Hiển thị thuộc tính thành công", data });
@@ -196,6 +191,9 @@ export const displayAttribute = async (req, res) => {
   }
 };
 
+/**
+ * Xoá thật thuộc tính và các giá trị liên quan (dữ liệu bị xoá khỏi database)
+ */
 export const deleteAttributeReal = async (req, res) => {
   try {
     const attribute = await Attribute.findOne({ _id: req.params.id });
@@ -203,14 +201,13 @@ export const deleteAttributeReal = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy thuộc tính" });
     }
 
+    // Xoá từng giá trị con trước
     for (let i = 0; i < attribute.values.length; i++) {
-      await AttributeValue.findByIdAndRemove({
-        _id: attribute.values[i],
-      });
+      await AttributeValue.findByIdAndRemove(attribute.values[i]);
     }
 
-    await Attribute.findByIdAndRemove({ _id: req.params.id });
-
+    // Sau đó xoá luôn thuộc tính
+    await Attribute.findByIdAndRemove(req.params.id);
     res.status(200).json();
   } catch (error) {
     res.status(500).json({ message: error.message });

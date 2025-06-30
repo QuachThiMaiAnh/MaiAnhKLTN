@@ -1,24 +1,168 @@
-/* @import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"); */
+/* ===================================== */
+/* 1. @IMPORT GOOGLE FONTS */
+/* ===================================== */
 @import url("https://fonts.googleapis.com/css?family=Questrial|Raleway:700,900");
 
-/* * {
-  list-style: none !important;
-} */
+/* ===================================== */
+/* 2. TAILWIND DIRECTIVES */
+/* ===================================== */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* li {
-  list-style: initial !important;
-} */
+/* ===================================== */
+/* 3. BASE TYPOGRAPHY & GLOBAL FONT */
+/* ===================================== */
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Questrial", sans-serif;
+    box-sizing: border-box;
+  }
 
-.font-questrial {
-  font-family: "Questrial", sans-serif;
+  .font-questrial {
+    font-family: "Questrial", sans-serif;
+  }
+
+  .font-raleway {
+    font-family: "Raleway", sans-serif;
+  }
+
+  :root {
+    /* ========= NỀN & VĂN BẢN CHÍNH ========= */
+    --background: 0 0% 100%; /* trắng */
+    --foreground: 0 0% 10%; /* đen đậm - chữ chính */
+
+    /* ========= CARD / HỘP ========= */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+
+    /* ========= POPOVER / DROPDOWN ========= */
+    --popover: 0 0% 98%; /* hơi xám cho nổi hơn */
+    --popover-foreground: 0 0% 10%;
+
+    /* ========= MÀU NHẤN / CHỦ ĐẠO ========= */
+    --primary: 145 70% 35%; /* xanh đậm hơn để rõ ràng hơn */
+    --primary-foreground: 0 0% 100%; /* trắng */
+
+    /* ========= MÀU PHỤ ========= */
+    --secondary: 0 0% 95%; /* nền phụ: xám nhạt */
+    --secondary-foreground: 0 0% 20%; /* chữ phụ: xám đậm hơn */
+
+    --muted: 0 0% 93%;
+    --muted-foreground: 0 0% 40%; /* đậm hơn để dễ đọc */
+
+    --accent: 210 40% 90%;
+    --accent-foreground: 0 0% 15%;
+
+    --destructive: 0 70% 50%; /* đỏ rõ ràng */
+    --destructive-foreground: 0 0% 100%;
+
+    /* ========= INPUT & BORDER ========= */
+    --input: 0 0% 90%;
+    --border: 0 0% 85%;
+    --ring: 145 70% 35%; /* giống primary */
+
+    /* ========= THÔNG TIN TRẠNG THÁI ========= */
+    --status: 45 100% 50%; /* vàng cảnh báo */
+    --status--foreground: 0 0% 10%;
+
+    /* ========= GÓC BO ========= */
+    --radius: 0.5rem;
+
+    /* ========= NỀN & VIỀN PHỤ ========= */
+    --border1: 0 0% 85%;
+    --border1--foreground: 0 0% 100%;
+    --border2: 0 0% 80%;
+    --background2: 0 0% 96%;
+    --foreground2: 0 0% 15%;
+
+    /* ========= SIDEBAR ========= */
+    --sidebar-background: 0 0% 97%;
+    --sidebar-foreground: 0 0% 15%;
+    --sidebar-primary: 0 0% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 145 80% 80%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 0 0% 85%;
+    --sidebar-ring: 145 70% 35%;
+  }
+
+  .dark {
+    /* ========= NỀN & VĂN BẢN CHÍNH ========= */
+    --background: 240 4% 8%; /* Tối vừa phải (gần #141414) */
+    --foreground: 0 0% 98%; /* Trắng gần tuyệt đối */
+
+    /* ========= CARD / HỘP ========= */
+    --card: 240 4% 12%; /* Gần #1F1F1F */
+    --card-foreground: 0 0% 98%;
+
+    /* ========= POPOVER / DROPDOWN ========= */
+    --popover: 240 4% 14%;
+    --popover-foreground: 0 0% 98%;
+
+    /* ========= MÀU NHẤN / CHỦ ĐẠO ========= */
+    --primary: 75 70% 42%; /* Giữ nguyên xanh lục đậm */
+    --primary-foreground: 0 0% 100%;
+
+    /* ========= MÀU PHỤ ========= */
+    --secondary: 240 3% 20%;
+    --secondary-foreground: 0 0% 90%;
+
+    --muted: 240 3% 22%;
+    --muted-foreground: 0 0% 65%; /* Đậm hơn so với 75% để dễ đọc hơn */
+
+    --accent: 240 4% 18%;
+    --accent-foreground: 0 0% 95%;
+
+    --destructive: 0 72% 40%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* ========= INPUT & BORDER ========= */
+    --input: 240 3% 25%;
+    --border: 240 3% 30%;
+    --ring: 75 70% 42%; /* giống màu primary */
+
+    /* ========= THÔNG TIN TRẠNG THÁI ========= */
+    --status: 50 90% 50%; /* vàng tươi nổi bật */
+    --status--foreground: 0 0% 100%;
+
+    /* ========= GÓC BO ========= */
+    --radius: 0.5rem;
+
+    /* ========= NỀN & VIỀN PHỤ ========= */
+    --border1: 0 0% 25%;
+    --border1--foreground: 0 0% 95%;
+    --border2: 0 0% 18%;
+    --background2: 0 0% 12%;
+    --foreground2: 0 0% 85%;
+
+    /* ========= SIDEBAR ========= */
+    --sidebar-background: 240 4% 10%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 145 70% 35%; /* giống màu primary nhưng dễ nhận */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4% 20%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 240 4% 25%;
+    --sidebar-ring: 75 70% 42%;
+  }
 }
 
-.font-raleway {
-  font-family: "Raleway", sans-serif;
-}
+/* ===================================== */ /*======================================================================================================/
+/* ===================================== */ /*======================================================================================================/
+/* ===================================== */ /*======================================================================================================/
+
+/* ===================================== */
+/* 1. DECORATION & STATUS HELPERS */
+/* ===================================== */
 .add:hover {
   color: white !important;
 }
+
 .xBNaac {
   background-image: repeating-linear-gradient(
     45deg,
@@ -36,52 +180,54 @@
   height: 3px;
   width: 100%;
 }
+
 .history-status {
   display: none !important;
 }
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* Giữ lại kiểu mặc định của <ol>, <ul>, <li> */
+/* ===================================== */
+/* 2. TYPOGRAPHY RESET FOR DETAIL */
+/* ===================================== */
 .detail ul,
 ol {
-  list-style: initial; /* Khôi phục kiểu dấu chấm (ul) và số thứ tự (ol) */
-  margin-left: 1.5rem; /* Khoảng cách trái mặc định */
-  padding-left: 1.5rem; /* Khoảng padding mặc định */
+  list-style: initial;
+  margin-left: 1.5rem;
+  padding-left: 1.5rem;
 }
 
 .detail li {
-  list-style: inherit; /* Đảm bảo các phần tử <li> sẽ kế thừa kiểu */
+  list-style: inherit;
 }
 
 .detail h1 {
-  font-size: 2.2rem; /* Cỡ chữ lớn cho <h1> */
-  font-weight: bold; /* Đậm */
-  margin-top: 1rem; /* Khoảng cách trên */
+  font-size: 2.2rem;
+  font-weight: bold;
+  margin-top: 1rem;
   margin-bottom: 1rem;
 }
 
 .detail h2 {
-  font-size: 2rem; /* Cỡ chữ vừa cho <h2> */
-  font-weight: bold; /* Đậm */
-  margin-top: 1rem; /* Khoảng cách trên */
-  margin-bottom: 1rem; /* Khoảng cách dưới */
+  font-size: 2rem;
+  font-weight: bold;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
 }
 
 body {
   font-family: "Questrial", sans-serif;
   box-sizing: border-box;
 }
-/* CSS cho spinner */
+
+/* ===================================== */
+/* 3. SPINNER ANIMATION */
+/* ===================================== */
 .spinner {
-  border: 4px solid rgba(255, 255, 255, 0.3); /* Lớp bao quanh */
-  border-top: 4px solid #3498db; /* Màu của vòng quay */
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid #3498db;
   border-radius: 50%;
   width: 40px;
   height: 40px;
-  animation: spin 1s linear infinite; /* Tạo hiệu ứng quay liên tục */
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
@@ -93,10 +239,16 @@ body {
   }
 }
 
+/* ===================================== */
+/* 4. RESPONSIVE CONTAINER */
+/* ===================================== */
 .container {
   @apply max-w-[100%] md:w-[750px] lg:w-[970px] xl:w-[1170px] px-[15px] mx-auto relative;
 }
 
+/* ===================================== */
+/* 5. BREADCRUMB STYLE */
+/* ===================================== */
 .breadcrumbs a {
   display: inline-block;
   text-transform: uppercase;
@@ -113,10 +265,9 @@ body {
   background: url(../src/assets/icons/ChevronRight.png);
   display: inline-block;
   vertical-align: top;
-  content: "";
   position: relative;
   top: 4px;
-  margin: 0 0 0 10px;
+  margin-left: 10px;
 }
 
 .bg-change {
@@ -129,149 +280,13 @@ body {
   background-image: url("../src/assets/icons/ChevronRightGreen.png");
 }
 
-/* CATEGORIES */
+/* ===================================== */
+/* 6. CATEGORY MENU STYLE */
+/* ===================================== */
 .categories-menu li {
   position: relative;
-  /* font-family: "Poppins", sans-serif; */
   font-family: "Questrial", sans-serif;
   -webkit-text-size-adjust: none;
-}
-/* banner */
-.title-underline span:before,
-.title-underline span:after {
-  width: 4px;
-  height: 1px;
-  background: inherit;
-  position: absolute;
-  content: "";
-  top: 0;
-  left: -9px;
-}
-.highlight::selection {
-  background-color: #343434;
-  color: #b8cd06;
-}
-.title-underline span:after {
-  left: auto;
-  right: -9px;
-}
-.title-underline span:before,
-.title-underline span:after {
-  width: 4px;
-  height: 1px;
-  background: inherit;
-  position: absolute;
-  content: "";
-  top: 0;
-}
-
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-
-    /* --border1: 222.2 84% 4.9%; */
-
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
-
-    --status: 0 0% 95.7%;
-    --status--foreground: 270, 50%, 9%;
-
-    /* Xám trắng */
-    --border1: 0 0% 95.7%;
-    --border1--foreground: 0 0% 100%;
-
-    /* xám đen  */
-    --background2: 0 0% 95.7%;
-    --foreground2: 222.2 84% 4.9%;
-
-    /* xám đen  */
-    --border2: 0 1.08% 81.76%;
-    ----border2--foreground: 222.2 84% 4.9%;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-
-    --status: 270, 50%, 9%;
-    --status--foreground: 0 0% 95.7%;
-
-    /* xám trắng */
-    --border1: 0 0% 100%;
-    --border1--foreground: 0 0% 95.7%;
-
-    /* xám đen  */
-    --background2: 222.2 84% 4.9%;
-    --foreground2: 0 0% 95.7%;
-
-    /* xám đen  */
-    --border2: 222.2 84% 4.9%;
-    ----border2--foreground: 0 1.08% 81.76%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-  }
 }
 
 @media (min-width: 992px) {
@@ -281,20 +296,15 @@ body {
     top: 0;
     width: 100%;
     transform-origin: 0 50%;
-    -webkit-transform-origin: 0 50%;
     transform: perspective(1000px) rotateY(45deg);
-    -webkit-transform: perspective(1000px) rotateY(45deg);
     opacity: 0;
     transition: transform 0.3s, opacity 0.3s, left 0s 0.3s;
-    -webkit-transition: transform 0.3s, opacity 0.3s, left 0s 0.3s;
   }
   .categories-menu li:hover > ul {
     transform: perspective(1000px) rotateY(0deg);
-    -webkit-transform: perspective(1000px) rotateY(0deg);
     opacity: 1;
     left: 100%;
     transition: transform 0.3s, opacity 0.3s, left 0s;
-    -webkit-transition: transform 0.3s, opacity 0.3s, left 0s;
   }
   .categories-menu ul {
     display: block !important;
@@ -306,32 +316,82 @@ body {
     padding-left: 40px;
     background: #555;
   }
-
   .categories-menu .toggle {
     transform: rotate(90deg);
-    -webkit-transform: rotate(90deg);
   }
   .categories-menu .toggle.active {
     transform: rotate(270deg);
-    -webkit-transform: rotate(270deg);
   }
   .bg-change {
     background-position: right 10px center;
   }
 }
 
-/* BUTTON ANIMATION*/
+/* ===================================== */
+/* 7. TITLE UNDERLINE + TEXT SELECTION */
+/* ===================================== */
+.title-underline span:before,
+.title-underline span:after {
+  width: 4px;
+  height: 1px;
+  background: inherit;
+  position: absolute;
+  content: "";
+  top: 0;
+}
+
+.title-underline span:before {
+  left: -9px;
+}
+
+.title-underline span:after {
+  right: -9px;
+  left: auto;
+}
+
+.highlight::selection {
+  background-color: #343434;
+  color: #b8cd06;
+}
+
+/* ===================================== */
+/* 1. DECORATION & STATUS HELPERS */
+/* ===================================== */
+.add:hover {
+  color: white !important;
+}
+
+.xBNaac {
+  background-image: repeating-linear-gradient(
+    45deg,
+    #6fa6d6,
+    #6fa6d6 33px,
+    transparent 0,
+    transparent 41px,
+    #f18d9b 0,
+    #f18d9b 74px,
+    transparent 0,
+    transparent 82px
+  );
+  background-position-x: -30px;
+  background-size: 116px 3px;
+  height: 3px;
+  width: 100%;
+}
+
+.history-status {
+  display: none !important;
+}
+
+/* ===================================== */
+/* 8. PREVIEW BUTTON ANIMATION */
+/* ===================================== */
 .product-item:hover .title-product {
   color: #b8cd06;
 }
 
 .valign-middle {
-  display: -ms-flexbox;
-  display: -webkit-flex;
   display: flex;
-  -ms-flex-align: center;
-  -webkit-align-items: center;
-  -webkit-box-align: center;
   align-items: center;
 }
 
@@ -344,7 +404,6 @@ body {
   height: 100%;
   text-align: center;
   transition: all 0.3s;
-  -webkit-transition: all 0.3s;
   background: rgba(255, 255, 255, 0.9);
   opacity: 0;
 }
@@ -356,31 +415,28 @@ body {
 
 .preview-btn .btn:nth-child(1) {
   margin-bottom: 10px;
-  transition: opacity 0.3s, left 0s 0.3s;
   transform: translateY(-30px);
-  -webkit-transform: translateY(-30px);
   transition: all 0.3s;
-  -webkit-transition: all 0.3s;
-  margin-bottom: 10px;
 }
 
 .preview-btn .btn:nth-child(2) {
-  transition: all 0.3s;
   transform: translateY(30px);
-  -webkit-transform: translateY(30px);
+  transition: all 0.3s;
 }
 
 .product-item:hover .preview-btn .btn {
   transform: translateY(0px);
-  -webkit-transform: translateY(0px);
 }
 
-/* BTN */
+/* ===================================== */
+/* 9. BUTTON HOVER EFFECT */
+/* ===================================== */
 .btn .icon {
   position: absolute;
   left: -300%;
   transition: all 0.15s;
 }
+
 .btn::before {
   content: "";
   position: absolute;
@@ -418,9 +474,9 @@ body {
   left: 200%;
 }
 
-/* BUTTON ANIMATION*/
-
-/* LIST ICON */
+/* ===================================== */
+/* 10. LIST ICON ANIMATION */
+/* ===================================== */
 .list-icon {
   position: absolute;
   top: 0;
@@ -428,26 +484,23 @@ body {
   width: 100%;
   height: 100%;
   opacity: 0;
-  transition: all 0.3s;
-  -webkit-transition: all 0.3s;
   transform: translateY(100%);
-  -webkit-transform: translateY(100%);
+  transition: all 0.3s;
 }
 
 .product-item:hover .list-icon {
   opacity: 1;
   transform: translateY(0);
-  -webkit-transform: translateY(0);
 }
 
 .product-item:hover .description-product {
   opacity: 0;
   transition: all 0.2s;
-  -webkit-transition: all 0.2s;
 }
-/* LIST ICON */
 
-/* BTN ADD */
+/* ===================================== */
+/* 11. BUTTON ADD EFFECT */
+/* ===================================== */
 .btn-add {
   display: block;
   position: relative;
@@ -461,7 +514,6 @@ body {
   width: 100%;
   height: 100%;
   border-radius: inherit;
-  -webkit-border-radius: inherit;
   background: inherit;
   content: "";
   opacity: 0.3;
@@ -469,11 +521,9 @@ body {
 
 .btn-add:hover:before {
   transform: scale(1.5);
-  -webkit-transform: scale(1.3);
   opacity: 0;
   visibility: hidden;
   transition: transform 0.5s, opacity 0.5s, visibility 0s 0.5s;
-  -webkit-transition: transform 0.5s, opacity 0.5s, visibility 0s 0.5s;
 }
 
 .btn-add span {
@@ -499,7 +549,6 @@ body {
   margin-left: -10px;
   color: #b8cd06;
   transition: all 0.15s;
-  -webkit-transition: all 0.15s;
 }
 
 .btn-add:hover .icon {
@@ -508,24 +557,20 @@ body {
 
 .btn-add span.text {
   transition: all 0.3s 0.05s;
-  -webkit-transition: all 0.3s 0.05s;
 }
 
 .btn-add:hover .text {
   left: 200%;
 }
 
-/* BTN ADD */
+/* ===================================== */
+/* 12. SWIPER STYLE & DATE INPUT */
+/* ===================================== */
 .swiper-pagination-bullet-active {
   border: 2px #fff solid;
   transform: scale(1.5);
-  -webkit-transform: scale(1.5);
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-}
-
-.swiper-pagination-bullet-active {
   background: white;
+  backface-visibility: hidden;
 }
 
 input[type="date"] {
@@ -533,16 +578,22 @@ input[type="date"] {
   border: 1px solid #d1d1d1;
   border-radius: 5px;
 }
+
 ::-webkit-calendar-picker-indicator {
   background-color: #ffffff;
   padding: 5px;
   cursor: pointer;
   border-radius: 3px;
 }
+
+/* ===================================== */
+/* 13. SIDEBAR MENU ACTIVE STATE */
+/* ===================================== */
 .sidebar-menu-item.active {
-  background-color: #1e40af; /* Màu nền khi chọn */
-  color: white; /* Màu chữ khi chọn */
+  background-color: #1e40af;
+  color: white;
 }
+
 .hover\:bg-sidebar-accent:hover {
   background-color: black !important;
   color: white !important;

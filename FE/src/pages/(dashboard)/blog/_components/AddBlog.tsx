@@ -1,16 +1,20 @@
+// Nhập các dependencies cần thiết
 import { Blog } from "@/common/types/Blog";
-import { useToast } from "@/components/ui/use-toast";
-import { uploadFile } from "@/lib/upload";
-import { useUser } from "@clerk/clerk-react";
+import { useToast } from "@/components/ui/use-toast"; // Hook hiển thị thông báo
+import { uploadFile } from "@/lib/upload"; // Hàm upload file (ví dụ lên Cloudinary)
+import { useUser } from "@clerk/clerk-react"; // Lấy thông tin người dùng đăng nhập
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
-import { useNavigate, useParams } from "react-router-dom";
+import { useForm } from "react-hook-form"; // Thư viện quản lý form
+import ReactQuill from "react-quill"; // Rich Text Editor
+import "react-quill/dist/quill.snow.css"; // Giao diện React Quill
+import { useNavigate, useParams } from "react-router-dom"; // Điều hướng và đọc param từ URL
 
 const AddBlog = () => {
+  // Lấy thông tin người dùng từ Clerk
   const { user } = useUser();
+
+  // Khởi tạo useForm với kiểu dữ liệu Blog, set giá trị mặc định cho category và author
   const {
     handleSubmit,
     register,
@@ -22,25 +26,28 @@ const AddBlog = () => {
       author: user?.fullName || "",
     },
   });
+
+  // State lưu danh mục, nội dung editor, ảnh preview, file ảnh, loading và điều hướng
   const [categories, setCategories] = useState<any[]>([]);
-  const [value, setValueEditor] = useState(""); // Lưu giá trị editor của React Quill
-  const [previewImage, setPreviewImage] = useState<string | null>(null); // Lưu ảnh xem trước
-  const [imageFile, setImageFile] = useState<File | null>(null); // Lưu file ảnh
+  const [value, setValueEditor] = useState(""); // Giá trị từ ReactQuill
+  const [previewImage, setPreviewImage] = useState<string | null>(null); // Ảnh xem trước
+  const [imageFile, setImageFile] = useState<File | null>(null); // File ảnh được chọn
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { id } = useParams();
+  const { id } = useParams(); // Dùng để kiểm tra nếu đang ở chế độ edit
 
+  // Đặt tiêu đề cho tab khi tạo mới blog
   useEffect(() => {
     if (!id) document.title = "Thêm Mới Bài Viết";
   }, [id]);
 
+  // Gọi API lấy danh mục blog từ server
   useEffect(() => {
-    // Hàm lấy danh mục từ API
     const fetchCategories = async () => {
       try {
-        const response = await axios.get("http://localhost:8080/api/category"); // Đường dẫn API
-        setCategories(response.data); // Lưu danh mục vào state
+        const response = await axios.get("http://localhost:8080/api/category");
+        setCategories(response.data); // Lưu vào state
       } catch (error) {
         console.error("Lỗi khi lấy danh mục:", error);
         toast({
@@ -51,9 +58,10 @@ const AddBlog = () => {
       }
     };
 
-    fetchCategories(); // Gọi hàm lấy danh mục
+    fetchCategories(); // Thực thi ngay khi component mount
   }, []);
 
+  // Cấu hình định dạng cho ReactQuill
   const formats = [
     "header",
     "bold",
@@ -68,37 +76,38 @@ const AddBlog = () => {
     "image",
   ];
 
-  // Hàm xử lý thay đổi nội dung của React Quill
+  // Khi thay đổi nội dung editor → cập nhật state + đồng bộ với react-hook-form
   const handleChange = (content: string) => {
-    setValueEditor(content); // Cập nhật giá trị cho editor
-    setValue("content", content); // Lưu vào React Hook Form
+    setValueEditor(content);
+    setValue("content", content);
   };
 
-  // Hàm xử lý khi chọn file ảnh
+  // Khi chọn ảnh → lưu file, tạo preview
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setImageFile(file); // Lưu file vào state
+      setImageFile(file); // Lưu file để upload
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewImage(reader.result as string); // Hiển thị ảnh xem trước
       };
-      reader.readAsDataURL(file); // Đọc file dưới dạng base64
+      reader.readAsDataURL(file);
     }
   };
 
-  // Hàm xử lý submit form
+  // Gửi form khi người dùng nhấn submit
   const onSubmit = async (data: Blog) => {
+    // Nếu chưa có ảnh → báo lỗi
     if (!imageFile) {
       alert("Vui lòng chọn một ảnh!");
       return;
     }
 
-    setLoading(true);
+    setLoading(true); // Bật trạng thái loading
 
     try {
       // Upload ảnh lên Cloudinary
-      const imageUrl = await uploadFile(imageFile); // Lấy URL ảnh từ Cloudinary
+      const imageUrl = await uploadFile(imageFile);
       if (!imageUrl) {
         toast({
           variant: "destructive",
@@ -108,27 +117,29 @@ const AddBlog = () => {
         return;
       }
 
-      // Tạo FormData để gửi yêu cầu POST
+      // Tạo FormData gửi lên backend
       const formData = new FormData();
       formData.append("title", data.title);
       formData.append("category", data.category);
       formData.append("author", data.author);
       formData.append("description", data.description);
       formData.append("content", data.content);
-      formData.append("image", imageUrl); // Gửi URL ảnh đã upload từ frontend
+      formData.append("image", imageUrl); // Gửi link ảnh đã upload
 
-      // Gửi yêu cầu POST lên BE
+      // Gọi API tạo bài viết
       const response = await axios.post(
         "http://localhost:8080/api/blogs",
         formData
       );
-      console.log("Bài viết đã được tạo:", response.data);
+
+      // Thành công → hiện thông báo và điều hướng
       toast({
         className: "bg-green-400 text-white h-auto",
         title: "Bài viết đã được tạo thành công!",
       });
       navigate("/admin/blogs");
     } catch (error) {
+      // Gặp lỗi khi gửi → hiển thị thông báo chi tiết
       console.error("Lỗi khi tạo bài viết:", error);
       toast({
         variant: "destructive",
@@ -164,10 +175,7 @@ const AddBlog = () => {
           <input
             {...register("title", {
               required: "Tiêu đề là bắt buộc",
-              minLength: {
-                value: 3,
-                message: "Tiêu đề phải có ít nhất 3 ký tự",
-              },
+              minLength: { value: 3, message: "Ít nhất 3 ký tự" },
             })}
             id="title"
             className="w-full p-2 border border-gray-300 rounded-md"
@@ -200,7 +208,8 @@ const AddBlog = () => {
             <span className="text-red-500">{errors.category.message}</span>
           )}
         </div>
-        {/* Tác giả */}
+
+        {/* Tác giả (ẩn) */}
         <div className="hidden">
           <label htmlFor="author" className="block text-lg font-medium mb-2">
             Tác giả
@@ -215,7 +224,8 @@ const AddBlog = () => {
             <span className="text-red-500">{errors.author.message}</span>
           )}
         </div>
-        {/* Hình ảnh */}
+
+        {/* Chọn ảnh */}
         <div>
           <label htmlFor="image" className="block text-lg font-medium mb-2">
             Chọn ảnh
@@ -231,8 +241,7 @@ const AddBlog = () => {
           {errors.image && (
             <span className="text-red-500">{errors.image.message}</span>
           )}
-
-          {/* Hiển thị ảnh xem trước */}
+          {/* Xem trước ảnh */}
           {previewImage && (
             <div className="mt-4">
               <img
@@ -243,6 +252,7 @@ const AddBlog = () => {
             </div>
           )}
         </div>
+
         {/* Mô tả */}
         <div>
           <label
@@ -260,6 +270,7 @@ const AddBlog = () => {
             <span className="text-red-500">{errors.description.message}</span>
           )}
         </div>
+
         {/* Nội dung (React Quill Editor) */}
         <div>
           <label htmlFor="content" className="block text-lg font-medium mb-2">
@@ -286,7 +297,8 @@ const AddBlog = () => {
             <span className="text-red-500">{errors.content.message}</span>
           )}
         </div>
-        {/* Nút Submit */}
+
+        {/* Nút Gửi */}
         <div>
           <button
             type="submit"

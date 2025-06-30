@@ -7,27 +7,23 @@ import { useGetAtributes } from "./actions/useGetAllAttributeValues";
 const AttributeValuePage = () => {
   const { id } = useParams();
 
-  const { isLoading, atributeValues, error } = useGetAtributes(id!);
+  const { isLoading, atributeValues } = useGetAtributes(id!);
 
   if (isLoading) {
     return <div>Loading...</div>;
   }
 
-  console.log("atributeValues", atributeValues);
+  // atributeValues[0].values là danh sách giá trị bên trong 1 thuộc tính duy nhất
+  const values = atributeValues?.length ? atributeValues[0].values : [];
 
   return (
-    <>
-      <div className="bg-white p-6">
-        <Header />
+    <div className="bg-white p-6">
+      <Header />
 
-        <div className="mt-5 grid grid-cols-1">
-          <DataTable
-            columns={columnAttributeValues}
-            data={atributeValues.length ? atributeValues[0].values : []}
-          />
-        </div>
+      <div className="mt-5 grid grid-cols-1">
+        <DataTable columns={columnAttributeValues} data={values} />
       </div>
-    </>
+    </div>
   );
 };
 
